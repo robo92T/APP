@@ -15,7 +15,54 @@
 @media(max-width:740px){.shell{width:min(100% - 32px,560px)}.utility-right{display:none}.utility-band{height:29px}.header-row{height:69px}.brand-seal{width:40px;height:40px}.brand-name{font-size:18px}.brand-name small{font-size:7px;letter-spacing:1.6px}.main-nav{display:none;position:absolute;left:0;right:0;top:68px;background:#0b1d2c;padding:12px 16px;border-bottom:1px solid var(--line);flex-direction:column;align-items:stretch;box-shadow:0 18px 30px rgba(0,0,0,.25)}.main-nav.is-open{display:flex}.nav-link{text-align:left;padding:14px}.menu-btn{display:block}.header-counter{padding:9px 12px;font-size:11px}.header-counter small{font-size:9px}.hero{margin-top:17px;min-height:550px;display:block;border-radius:17px}.hero:after{left:12px;right:12px;top:12px;bottom:12px}.hero-content{width:100%;padding:33px 27px 10px}.hero h1{font-size:clamp(39px,9vw,54px);max-width:450px}.hero p{font-size:12px;line-height:1.6;max-width:460px}.hero-foot{margin-top:19px;font-size:9px;gap:11px}.hero-gallery{top:264px;right:calc(50% - 205px);transform:scale(.63);transform-origin:top center}.metrics{gap:9px;margin-top:12px}.metric{min-height:86px;padding:12px;gap:10px}.metric-ico{width:38px;height:38px;flex-shrink:0;font-size:21px}.metric strong{font-size:20px}.metric span{font-size:9px;margin-top:5px}.activity-strip{margin-top:18px;padding:22px;display:block}.activity-strip h2{font-size:23px}.activity-actions{margin-top:16px}.library{padding-top:45px}.library-heading{display:block}.library-heading h2,.award-section h2{font-size:33px}.library-search{margin-top:20px;min-width:0;width:100%}.sort-control{margin-left:auto}.card-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.card-art{height:171px}.art-mark{font-size:95px;top:5px}.art-letter{font-size:53px}.art-ribbon{font-size:7px;left:13px;bottom:12px;padding:6px 7px}.heart-btn{right:10px;top:10px;width:28px;height:28px}.card-info{padding:12px;min-height:160px}.person-name{font-size:17px}.person-title{font-size:10px;min-height:59px}.card-bottom{flex-wrap:wrap}.card-bottom button{font-size:10px}.page-hero{padding:30px 25px;min-height:240px}.page-hero h1{font-size:43px}.game-selector{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.game-tile{min-height:250px;padding:16px}.game-tile-icon{width:46px;height:46px;font-size:27px;margin-bottom:13px}.game-tile h3{font-size:20px}.game-tile p{font-size:11px}.game-stage{padding:15px;margin-top:18px}.answer-grid{grid-template-columns:1fr}.answer-button{min-height:62px}.badge-grid{grid-template-columns:1fr}.memory-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}.memory-card,.memory-card-inner{min-height:100px}.memory-face.front{font-size:10px;padding:7px}.person-dialog{grid-template-columns:1fr;max-width:450px}.modal-backdrop{align-items:start}.dialog-left{min-height:290px;padding:18px}.dialog-ornament{width:185px;min-height:238px}.dialog-ornament>span{font-size:70px}.dialog-ornament>b{font-size:15px}.dialog-right{padding:26px 24px 31px}.dialog-right h2{font-size:29px}.dialog-right p{font-size:12px;margin-bottom:18px}.footer-inner{padding:22px 0;justify-content:center;text-align:center}}
 @media(max-width:380px){.shell{width:calc(100% - 24px)}.brand-name{font-size:16px}.brand-name small{font-size:6px}.hero h1{font-size:37px}.hero-content{padding-left:22px;padding-right:22px}.hero{min-height:570px}.hero-gallery{top:286px}.metric{padding:8px}.metric-ico{width:34px;height:34px}.metric strong{font-size:18px}.category-filter{padding:9px 11px}.person-name{font-size:15px}.card-info{padding:10px}}
 
-  </style>
+  
+/* --- v3 portraits and embedded video --- */
+.person-card{position:relative;overflow:hidden;background:linear-gradient(180deg,rgba(20,40,56,.92),rgba(13,28,40,.95));}
+.person-card::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at top right,rgba(230,197,139,.08),transparent 28%),radial-gradient(circle at bottom left,rgba(145,63,91,.12),transparent 34%);pointer-events:none}
+.card-art{height:auto!important;background:none!important;border:0!important;padding:22px 20px 8px;display:flex;align-items:center;justify-content:center;position:relative}
+.card-medallion{position:relative;width:160px;height:160px;border-radius:50%;padding:8px;background:linear-gradient(145deg,rgba(241,211,151,.92),rgba(177,121,73,.94));box-shadow:0 16px 36px rgba(0,0,0,.30), inset 0 0 0 1px rgba(255,239,204,.35);cursor:pointer;transition:transform .2s ease, box-shadow .2s ease}
+.card-medallion:hover{transform:translateY(-3px) scale(1.02);box-shadow:0 20px 42px rgba(0,0,0,.35)}
+.card-medallion::before{content:'';position:absolute;inset:8px;border-radius:50%;border:1px solid rgba(255,241,206,.7);pointer-events:none}
+.card-medallion::after{content:'';position:absolute;inset:18px;border-radius:50%;border:1px dashed rgba(78,40,39,.18);pointer-events:none}
+.portrait-frame{position:relative;width:100%;height:100%;border-radius:50%;overflow:hidden;background:radial-gradient(circle at 50% 25%,#35556c 0%,#1a3246 56%,#10212e 100%)}
+.portrait-svg{width:100%;height:100%;display:block}
+.art-ribbon{left:50%!important;transform:translateX(-50%);bottom:6px!important;border-radius:999px;background:rgba(14,28,40,.84)!important;backdrop-filter:blur(6px);border:1px solid rgba(232,199,135,.24);padding:7px 12px!important}
+.art-corners,.art-mark,.art-letter{display:none!important}
+.watched-dot{top:14px!important;right:14px!important;left:auto!important;z-index:3;box-shadow:0 8px 18px rgba(0,0,0,.28)}
+.card-info{padding-top:10px!important}
+.card-number{display:inline-flex;align-items:center;gap:6px}
+.card-number::before{content:'✦';color:var(--gold)}
+.card-bottom button{padding:0;background:none;border:0;color:var(--gold);font-weight:800}
+.dialog-left{padding:28px!important}
+.dialog-ornament{width:min(100%,290px)!important;min-height:360px!important;border-radius:22px!important;overflow:hidden;background:linear-gradient(165deg,#294458,#0d2236 60%,#47283a)!important}
+.dialog-ornament > span,.dialog-ornament > b,.dialog-ornament > small{display:none!important}
+.dialog-portrait-wrap{width:100%;display:flex;flex-direction:column;align-items:center;gap:14px;padding:26px 20px 20px;position:relative;z-index:1}
+.dialog-medallion{width:196px;height:196px;border-radius:50%;padding:10px;background:linear-gradient(145deg,#efcf94,#b97b4c);box-shadow:0 18px 34px rgba(0,0,0,.3), inset 0 0 0 1px rgba(255,244,218,.4)}
+.dialog-medallion .portrait-frame{background:radial-gradient(circle at 50% 20%,#486a81 0%,#213d52 60%,#112333 100%)}
+.dialog-badge{font-size:10px;letter-spacing:2px;color:#f0d7a7;font-weight:900}
+.dialog-quote{font-family:Georgia,serif;color:#fff3d5;font-size:21px;text-align:center;line-height:1.25;max-width:220px}
+.dialog-meta-mini{font-size:10px;letter-spacing:1.3px;color:#d7bc8a}
+.person-dialog{max-width:980px!important}
+.dialog-right{padding-bottom:36px!important}
+.dialog-actions{display:grid;grid-template-columns:1fr;gap:10px;margin-bottom:14px}
+.inline-video-panel{display:none;margin:18px 0 14px;border:1px solid rgba(230,195,135,.22);border-radius:16px;overflow:hidden;background:rgba(10,22,31,.62)}
+.inline-video-panel.is-open{display:block;animation:fadeUp .25s both}
+.inline-video-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;border-bottom:1px solid rgba(230,195,135,.18);background:rgba(255,255,255,.02)}
+.inline-video-head strong{font-size:12px;letter-spacing:.4px;color:#f0dfc1}
+.inline-video-close{border:1px solid rgba(236,198,134,.24);background:#11283b;color:var(--gold);border-radius:10px;padding:7px 11px;font-size:11px;font-weight:800}
+.inline-video-shell{aspect-ratio:16/10;background:#08131d}
+.inline-video-shell iframe{display:block;width:100%;height:100%;border:0;background:#08131d}
+.video-panel-meta{padding:12px 14px;color:#9fb0bb;font-size:11px;line-height:1.6}
+.video-panel-meta a{color:var(--gold);text-decoration:underline}
+@media(max-width:740px){
+ .card-medallion{width:132px;height:132px}
+ .dialog-ornament{min-height:unset!important}
+ .dialog-medallion{width:160px;height:160px}
+ .dialog-quote{font-size:18px}
+ .inline-video-shell{aspect-ratio:16/12}
+}
+
+</style>
 
 
 </head>
@@ -670,9 +717,42 @@ function filteredPeople(){
  if(sort==='random')out.sort((a,b)=>(a.randomOrder??0)-(b.randomOrder??0));
  return out;
 }
+
+function svgEsc(t){return String(t??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+function portraitSeed(id){const s=Math.abs(Math.sin(id*999))*10000;return s-Math.floor(s);}
+function portraitProfile(p){
+ const seed=portraitSeed(p.id), femaleHint=/maria|terezia|zuzana|diana|victoria|alžbeta|alzbeta|izabela|katarina|anna|mária|margita|žofia|sofia/i.test(p.name);
+ const skin=['#f0c7a4','#e2b38f','#d1a17c','#f3cfb1'][p.id%4];
+ const hairBase=femaleHint?['#513226','#6b3e25','#34211b','#8e6435'][p.id%4]:['#2c1b15','#5a3624','#3b261d','#6f4f31'][p.id%4];
+ const garment=['#7a3651','#244b63','#615037','#3e5f4e'][p.id%4];
+ return {femaleHint, skin, hairBase, garment, seed};
+}
+function portraitSVG(p,variant='card'){
+ const {femaleHint,skin,hairBase,garment,seed}=portraitProfile(p);
+ const crown = p.category==='kings'||p.category==='emperors';
+ const president = p.category==='presidents';
+ const prince = p.category==='princes';
+ const beard = !femaleHint && ((p.id%3)===0 || /jozef|ferdinand|františek|frantisek|gejza|belo|ladislav|jan|ján|gustáv|gustav|ivan/i.test(p.name));
+ const hairH = 78 + Math.round((seed*18));
+ const faceY = 68;
+ const bustY = 148;
+ const robeShape = president ? 'M42 216 Q120 144 198 216 L198 240 L42 240 Z' : 'M32 220 Q120 132 208 220 L208 240 L32 240 Z';
+ const adornTop = crown
+   ? '<g transform="translate(62,18)"><path d="M8 38 L26 14 L42 34 L58 10 L74 34 L92 14 L110 38 L110 52 L8 52 Z" fill="#e8c47c" stroke="#8e6438" stroke-width="3"/><circle cx="26" cy="14" r="4" fill="#f4e4bf"/><circle cx="58" cy="10" r="5" fill="#f9ecbf"/><circle cx="92" cy="14" r="4" fill="#f4e4bf"/></g>'
+   : president
+   ? '<g transform="translate(58,26)"><path d="M20 26 Q58 -2 104 26" fill="none" stroke="#d6b377" stroke-width="8" stroke-linecap="round"/><path d="M32 34 Q58 16 92 34" fill="none" stroke="#927647" stroke-width="4" stroke-linecap="round"/></g>'
+   : prince
+   ? '<g transform="translate(75,24)"><path d="M8 30 L25 14 L42 30" fill="none" stroke="#dbb672" stroke-width="8" stroke-linecap="round"/><circle cx="25" cy="12" r="5" fill="#f4e0af"/></g>'
+   : '<g transform="translate(60,24)"><path d="M18 28 Q56 2 98 28" fill="none" stroke="#d7b06d" stroke-width="6" stroke-dasharray="1 8" stroke-linecap="round"/></g>';
+ const categoryMark = crown ? '♛' : president ? '✦' : prince ? '⚜' : '◆';
+ const mouth = beard
+   ? `<path d="M102 ${faceY+60} Q120 ${faceY+72} 138 ${faceY+60} Q134 ${faceY+84} 120 ${faceY+88} Q106 ${faceY+84} 102 ${faceY+60} Z" fill="#4d3429"/>`
+   : `<path d="M108 ${faceY+62} Q120 ${faceY+70} 132 ${faceY+62}" stroke="#9c5e5b" stroke-width="3" fill="none" stroke-linecap="round"/>`;
+ return `<svg class="portrait-svg" viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Ilustrovaný portrét ${svgEsc(p.name)}"><defs><linearGradient id="bg${p.id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#314d62"/><stop offset="100%" stop-color="#152534"/></linearGradient><linearGradient id="robe${p.id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="${garment}"/><stop offset="100%" stop-color="#1c2430"/></linearGradient></defs><rect width="240" height="240" fill="url(#bg${p.id})"/><circle cx="120" cy="95" r="86" fill="rgba(240,205,144,.10)"/><circle cx="120" cy="95" r="74" fill="rgba(240,205,144,.08)" stroke="rgba(255,228,175,.18)"/>${adornTop}<path d="${robeShape}" fill="url(#robe${p.id})"/><ellipse cx="120" cy="${bustY+30}" rx="44" ry="30" fill="rgba(0,0,0,.16)"/><path d="M72 ${bustY} Q120 116 168 ${bustY} L156 198 Q120 212 84 198 Z" fill="${garment}" opacity=".88"/><path d="M70 ${hairH} Q78 40 120 38 Q162 40 170 ${hairH} L170 112 Q160 96 152 92 Q150 126 120 132 Q90 126 88 92 Q79 99 70 112 Z" fill="${hairBase}"/><ellipse cx="120" cy="${faceY+28}" rx="34" ry="42" fill="${skin}"/><path d="M103 ${faceY+22} q8 -6 16 0" stroke="#5a3624" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M121 ${faceY+22} q8 -6 16 0" stroke="#5a3624" stroke-width="3" fill="none" stroke-linecap="round"/><circle cx="107" cy="${faceY+34}" r="3.4" fill="#2d221f"/><circle cx="133" cy="${faceY+34}" r="3.4" fill="#2d221f"/><path d="M120 ${faceY+38} L116 ${faceY+53} Q120 ${faceY+56} 124 ${faceY+53} Z" fill="rgba(133,77,58,.45)"/>${mouth}<path d="M92 ${faceY+24} Q120 ${faceY-1} 148 ${faceY+24}" fill="none" stroke="${hairBase}" stroke-width="10" stroke-linecap="round"/><circle cx="54" cy="182" r="18" fill="rgba(0,0,0,.12)"/><text x="54" y="188" text-anchor="middle" font-size="22" fill="#f4ddb1" font-family="Georgia,serif">${categoryMark}</text></svg>`;
+}
+
 function card(p){
- const sym=GLYPHS[p.category]||'♛';
- return `<article class="person-card cat-${p.category}"><div class="card-art" data-open="${p.id}" role="button" tabindex="0" aria-label="Otvoriť kartu ${esc(p.name)}"><span class="art-corners" aria-hidden="true">✧ ✧</span><span class="art-mark" aria-hidden="true">${sym}</span><span class="art-letter" aria-hidden="true">${esc(p.name[0])}</span><span class="art-ribbon">${esc(CATNAMES[p.category])}</span>${watched.has(p.id)?'<span class="watched-dot" title="Pozreté">✓</span>':''}</div><button class="heart-btn ${favorites.has(p.id)?'saved':''}" data-favorite="${p.id}" aria-label="${favorites.has(p.id)?'Odobrať z obľúbených':'Uložiť do obľúbených'}: ${esc(p.name)}">${favorites.has(p.id)?'♥':'♡'}</button><div class="card-info"><span class="card-number">KARTA / ${String(p.id).padStart(3,'0')}</span><h3 class="person-name">${esc(p.name)}</h3><p class="person-title">${esc(p.title)}</p><div class="card-bottom"><span>${watched.has(p.id)?'✓ Pozreté':'◷ Neobjavené'}</span><button data-open="${p.id}">Otvoriť kartu ↗</button></div></div></article>`;
+ return `<article class="person-card cat-${p.category}"><div class="card-art"><div class="card-medallion" data-open="${p.id}" role="button" tabindex="0" aria-label="Otvoriť kartu ${esc(p.name)}"><div class="portrait-frame">${portraitSVG(p,'card')}</div><span class="art-ribbon">${esc(CATNAMES[p.category])}</span>${watched.has(p.id)?'<span class="watched-dot" title="Pozreté">✓</span>':''}</div></div><button class="heart-btn ${favorites.has(p.id)?'saved':''}" data-favorite="${p.id}" aria-label="${favorites.has(p.id)?'Odobrať z obľúbených':'Uložiť do obľúbených'}: ${esc(p.name)}">${favorites.has(p.id)?'♥':'♡'}</button><div class="card-info"><span class="card-number">KARTA / ${String(p.id).padStart(3,'0')}</span><h3 class="person-name">${esc(p.name)}</h3><p class="person-title">${esc(p.title)}</p><div class="card-bottom"><span>${watched.has(p.id)?'✓ Pozreté':'◷ Neobjavené'}</span><button data-open="${p.id}">Otvoriť kartu ↗</button></div></div></article>`;
 }
 function renderLibrary(){
  categoryChoices();const result=filteredPeople();const visible=result.slice(0,limit);
@@ -699,12 +779,12 @@ function openPerson(id,focus=true){
  const p=PEOPLE.find(x=>x.id===id);if(!p)return;
  if(focus)lastFocus=document.activeElement;
  currentModal=id;const pos=PEOPLE.findIndex(x=>x.id===id);const prev=PEOPLE[(pos+PEOPLE.length-1)%PEOPLE.length];const next=PEOPLE[(pos+1)%PEOPLE.length];
- $('dialogLeft').innerHTML=`<div class="dialog-ornament"><span>${GLYPHS[p.category]}</span><b>${esc(p.name)}</b><small>HISTORICKÁ KARTA #${String(p.id).padStart(3,'0')}</small></div>`;
- $('dialogRight').innerHTML=`<div class="dialog-kicker">${esc(CATNAMES[p.category])} &nbsp; · &nbsp; KARTA ${String(p.id).padStart(3,'0')}</div><h2 id="personDialogTitle">${esc(p.name)}</h2><p>${esc(p.title)}</p><a class="btn btn-gold" href="${esc(safeURL(p.url))}" target="_blank" rel="noopener noreferrer">▶ &nbsp; Otvoriť videopríbeh ↗</a><button class="btn btn-outline" data-watched="${p.id}">${watched.has(id)?'✓ Označené ako pozreté':'✓ Označiť video ako pozreté'}</button><button class="btn btn-quiet" data-favorite="${p.id}">${favorites.has(id)?'♥ Odobrať z mojej zbierky':'♡ Pridať do mojej zbierky'}</button><div class="dialog-meta">Odkaz pochádza z dodaného zoznamu World's Monarchs. Video sa otvorí na externej stránke. <strong>Označenie „pozreté“ nie je automatické</strong> – nastavuješ si ho sám alebo sama.</div><div class="dialog-nav"><button data-open="${prev.id}">← Predchádzajúca</button><button data-open="${next.id}">Nasledujúca →</button></div>`;
+ $('dialogLeft').innerHTML=`<div class="dialog-ornament"><div class="dialog-portrait-wrap"><div class="dialog-badge">${esc(CATNAMES[p.category])}</div><div class="dialog-medallion"><div class="portrait-frame">${portraitSVG(p,'dialog')}</div></div><div class="dialog-quote">${esc(p.name)}</div><div class="dialog-meta-mini">HISTORICKÁ KARTA #${String(p.id).padStart(3,'0')}</div></div></div>`;
+ $('dialogRight').innerHTML=`<div class="dialog-kicker">${esc(CATNAMES[p.category])} &nbsp; · &nbsp; KARTA ${String(p.id).padStart(3,'0')}</div><h2 id="personDialogTitle">${esc(p.name)}</h2><p>${esc(p.title)}</p><div class="dialog-actions"><button class="btn btn-gold" data-playvideo="${p.id}" data-src="${esc(safeURL(p.url))}">▶ &nbsp; Prehrať videopríbeh v aplikácii</button><button class="btn btn-outline" data-watched="${p.id}">${watched.has(id)?'✓ Označené ako pozreté':'✓ Označiť video ako pozreté'}</button><button class="btn btn-quiet" data-favorite="${p.id}">${favorites.has(id)?'♥ Odobrať z mojej zbierky':'♡ Pridať do mojej zbierky'}</button></div><div class="inline-video-panel" id="inlineVideoPanel"><div class="inline-video-head"><strong>Videopríbeh: ${esc(p.name)}</strong><button class="inline-video-close" data-close-inline-video="true">Zavrieť video</button></div><div class="inline-video-shell"><iframe id="inlineVideoFrame" title="Videopríbeh ${esc(p.name)}" loading="lazy" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div><div class="video-panel-meta">Video sa pokúsi načítať priamo v aplikácii. Ak externá stránka nepovolí vloženie do rámca, použi <a href="${esc(safeURL(p.url))}" target="_blank" rel="noopener noreferrer">otvorenie originálu ↗</a>.</div></div><div class="dialog-meta">Vizuál kariet je teraz upravený do jednotného ilustrovaného štýlu inšpirovaného zberateľskou sériou World’s Monarchs. Video sa už pokúša otvárať priamo v aplikácii. <strong>Označenie „pozreté“ nie je automatické</strong> – nastavuješ si ho sám alebo sama.</div><div class="dialog-nav"><button data-open="${prev.id}">← Predchádzajúca</button><button data-open="${next.id}">Nasledujúca →</button></div>`;
  $('personOverlay').hidden=false;document.body.style.overflow='hidden';
  if(focus)$('closePerson').focus();
 }
-function closePerson(){if(currentModal===null)return;currentModal=null;$('personOverlay').hidden=true;document.body.style.overflow='';if(lastFocus&&document.contains(lastFocus))lastFocus.focus();}
+function closePerson(){if(currentModal===null)return;currentModal=null;$('personOverlay').hidden=true;const frame=$('inlineVideoFrame');const panel=$('inlineVideoPanel');if(frame)frame.src='about:blank';if(panel)panel.classList.remove('is-open');document.body.style.overflow='';if(lastFocus&&document.contains(lastFocus))lastFocus.focus();}
 function revealGames(){ $('gameSelector').hidden=false;$('gameStage').hidden=true;stopTimer();game=null; }
 function startGame(type){
  stopTimer();if(!['identity','truefalse','memory','speed'].includes(type))return;
@@ -771,13 +851,15 @@ function completeGame(){
 function freshRandom(){const p=PEOPLE[Math.floor(Math.random()*PEOPLE.length)];if(p)openPerson(p.id);}
 function bindEvents(){
  document.addEventListener('click',e=>{
-  const x=e.target.closest('[data-nav],[data-filter],[data-open],[data-favorite],[data-watched],[data-clear],[data-start-game],[data-answer],[data-tf],[data-flip],[data-restart],[data-show-games],[data-collection]');if(!x)return;
+  const x=e.target.closest('[data-nav],[data-filter],[data-open],[data-favorite],[data-watched],[data-clear],[data-start-game],[data-answer],[data-tf],[data-flip],[data-restart],[data-show-games],[data-collection],[data-playvideo],[data-close-inline-video]');if(!x)return;
   const d=x.dataset;
   if(d.nav)nav(d.nav);
   else if(d.filter){filter=d.filter;limit=12;renderLibrary();}
   else if(d.open)openPerson(Number(d.open),currentModal===null);
   else if(d.favorite)toggleFavorite(Number(d.favorite));
   else if(d.watched)toggleWatched(Number(d.watched));
+  else if(d.playvideo){const panel=$('inlineVideoPanel'),frame=$('inlineVideoFrame');if(panel&&frame){frame.src=safeURL(d.src||'about:blank');panel.classList.add('is-open');panel.scrollIntoView({behavior:'smooth',block:'nearest'});} }
+  else if(d.closeInlineVideo!==undefined){const panel=$('inlineVideoPanel'),frame=$('inlineVideoFrame');if(frame)frame.src='about:blank';if(panel)panel.classList.remove('is-open');}
   else if(d.clear){filter='all';search='';$('searchField').value='';limit=12;renderLibrary();}
   else if(d.startGame)startGame(d.startGame);
   else if(d.answer!==undefined&&game){if(game.type==='identity')identityAnswer(d.answer);else if(game.type==='speed')speedAnswer(d.answer);}
