@@ -126,7 +126,7 @@
     <section id="gamesView" class="view" aria-labelledby="gamesTitle"><div class="shell inner-page"><div class="page-hero games-hero"><div class="section-kicker">HERNÁ SIEŇ</div><h1 id="gamesTitle">Učenie, ktoré je <em>hra.</em></h1><p>Štyri odlišné výzvy. Vyber si hru, zbieraj body a odomykaj svoje historické odznaky.</p><div class="game-highscore">✦ <span id="gamesTotalScore">0</span> tvojich bodov</div></div><div class="game-selector" id="gameSelector"><button class="game-tile" data-start-game="identity"><span class="game-tile-icon">♛</span><small>01 · KVÍZ</small><h3>Kto som?</h3><p>Uhádni osobnosť podľa jej historického titulu.</p><b>Spustiť hru <span>↗</span></b></button><button class="game-tile" data-start-game="truefalse"><span class="game-tile-icon">◈</span><small>02 · ROZHODOVANIE</small><h3>Pravda či výmysel?</h3><p>Patrí titul naozaj uvedenej osobnosti?</p><b>Spustiť hru <span>↗</span></b></button><button class="game-tile" data-start-game="memory"><span class="game-tile-icon">▦</span><small>03 · PAMÄŤ</small><h3>Kráľovské pexeso</h3><p>Hľadaj dvojice mien a správnych titulov.</p><b>Spustiť hru <span>↗</span></b></button><button class="game-tile" data-start-game="speed"><span class="game-tile-icon">⚡</span><small>04 · RÝCHLOSŤ</small><h3>Časová výzva</h3><p>Roztrieď osobnosti, kým vyprší čas.</p><b>Spustiť hru <span>↗</span></b></button></div><div class="game-stage" id="gameStage" hidden><div class="stage-toolbar"><button class="back-btn" id="backToGames">← Všetky hry</button><span class="stage-score" id="livePoints">✦ 0 bodov</span></div><div id="gameContent" aria-live="polite"></div></div><section class="award-section" aria-labelledby="badgesTitle"><div class="section-kicker">ODMENY ZA OBJAVOVANIE</div><h2 id="badgesTitle">Tvoje odznaky</h2><p>Postupne si ich odomkneš pri objavovaní videí a hraní hier.</p><div class="badge-grid" id="badgesGrid"></div></section></div></section>
     <section id="collectionView" class="view" aria-labelledby="collectionTitle"><div class="shell inner-page"><div class="page-hero collection-hero"><div class="section-kicker">MOJA ZBIERKA</div><h1 id="collectionTitle">Tvoja cesta <em>dejinami.</em></h1><p>Ukladaj si obľúbené osobnosti a sleduj, ktoré príbehy si už objavil.</p><div class="collection-progress"><span id="progressLabel">0 z 78 príbehov</span><div class="progress-line"><div id="progressBar" style="width:0%"></div></div></div></div><div class="collection-tabs" role="group" aria-label="Typ zbierky"><button class="tab active" data-collection="saved">♡ Obľúbené <span id="savedTabCount">0</span></button><button class="tab" data-collection="watched">✓ Pozreté <span id="watchedTabCount">0</span></button></div><div class="card-grid" id="collectionGrid"></div><div class="empty-state" id="collectionEmpty" hidden><span>♧</span><h3>Tu sa tvoja zbierka začne.</h3><p>Otvor niektorú historickú kartu a ulož si ju medzi obľúbené alebo označ video ako pozreté.</p><button class="btn btn-gold" data-nav="explore">Objaviť osobnosti ↗</button></div><div class="collection-note">Tvoj postup sa ukladá iba v tomto prehliadači a na tomto zariadení. Nevyžaduje sa účet.</div></div></section>
   </main>
-  <footer class="footer"><div class="shell footer-inner"><span class="footer-brand">♛ &nbsp; ATLAS <b>DEJÍN</b> <span class="version-pill">VERZIA 8 · WIKIPÉDIA A ZAUJÍMAVOSTI</span></span><span>Interaktívna vzdelávacia knižnica · ZŠ Strážnická</span><span>Video odkazy: <a href="https://worldsmonarchs.com/" rel="noopener noreferrer" target="_blank">World’s Monarchs ↗</a></span></div></footer>
+  <footer class="footer"><div class="shell footer-inner"><span class="footer-brand">♛ &nbsp; ATLAS <b>DEJÍN</b> <span class="version-pill">VERZIA 9 · ROZŠÍRENÉ PORTRÉTY</span></span><span>Interaktívna vzdelávacia knižnica · ZŠ Strážnická</span><span>Video odkazy: <a href="https://worldsmonarchs.com/" rel="noopener noreferrer" target="_blank">World’s Monarchs ↗</a></span></div></footer>
 </div>
 <div class="modal-backdrop" id="personOverlay" hidden><div class="person-dialog" role="dialog" aria-modal="true" aria-labelledby="personDialogTitle"><button class="modal-close" id="closePerson" aria-label="Zavrieť okno">×</button><div class="dialog-left" id="dialogLeft"></div><div class="dialog-right" id="dialogRight"></div></div></div>
 <div class="toast-holder" id="toastHolder" role="status" aria-live="polite"></div>
@@ -869,48 +869,88 @@ const WIKI_ARTICLES = {
  "78": "Zuzana Čaputová"
 };
 const wikiPortraitCache = new Map();
+// V9: use Wikipedia, Wikidata's exact person image, then Commons search.
+// Unlike a Google Images scrape, Wikimedia provides durable URLs and attribution.
+const portraitRejected=/coat.?of.?arms|coat_of_arms|\bflag\b|^flag_|logo|\bseal\b|signature|\bmap\b|insignia|\bshield\b|blason|banner|stamp|coin|tomb|grave|mausoleum|house|palace|monument|castle|statue|bust|plaque|church|cathedral/i;
+function normalizePortraitWords(value){return String(value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9 ]/g,' ').replace(/\s+/g,' ').trim();}
+function portraitFromFile(file,src,articleTitle,origin){
+ if(!file||!src)return null;
+ let url;try{url=new URL(src);}catch{return null;}
+ if(url.protocol!=='https:'||url.hostname!=='upload.wikimedia.org'||!url.pathname.startsWith('/wikipedia/commons/'))return null;
+ const clean=String(file).replace(/^File:/i,'').replace(/_/g,' ');
+ if(portraitRejected.test(clean)||!/(\.jpe?g|\.png|\.webp|\.svg)$/i.test(clean))return null;
+ return {src:url.href,title:articleTitle,file:clean,source:origin||'https://en.wikipedia.org/wiki/'+encodeURIComponent(articleTitle.replace(/ /g,'_')),commons:'https://commons.wikimedia.org/wiki/File:'+encodeURIComponent(clean.replace(/ /g,'_'))};
+}
+async function commonsFilePhoto(filename,articleTitle){
+ try{
+  const q=new URLSearchParams({action:'query',format:'json',formatversion:'2',origin:'*',prop:'imageinfo',iiprop:'url',iiurlwidth:'540',titles:'File:'+filename});
+  const res=await fetch('https://commons.wikimedia.org/w/api.php?'+q,{mode:'cors'});
+  if(!res.ok)return null;
+  const pg=(await res.json())?.query?.pages?.[0];
+  const pic=pg?.imageinfo?.[0];if(!pic)return null;
+  return portraitFromFile(pg.title,pic.thumburl||pic.url,articleTitle);
+ }catch{return null;}
+}
 function fetchWikiPortrait(person){
-  if(wikiPortraitCache.has(person.id))return wikiPortraitCache.get(person.id);
-  const title=WIKI_ARTICLES[person.id];
-  if(!title)return Promise.resolve(null);
-  const articlePath=encodeURIComponent(title.replace(/ /g,'_'));
-  const toPhoto=(src,pageTitle,fileName)=>{
-    if(!src)return null;
-    let u;try{u=new URL(src);}catch{return null;}
-    if(u.protocol!=='https:'||u.hostname!=='upload.wikimedia.org')return null;
-    // Reuse only files hosted by Wikimedia Commons, not non-free local Wikipedia images.
-    if(!u.pathname.startsWith('/wikipedia/commons/'))return null;
-    const file=fileName||decodeURIComponent(u.pathname.split('/').pop()||'');
-    if(/coat.?of.?arms|coat_of_arms|\bflag\b|^flag_|logo|\bseal\b|signature|\bmap\b|insignia|\bshield\b|blason|banner/i.test(file))return null;
-    const label=pageTitle||title;
-    return {src:u.href,title:label,file,
-       source:'https://en.wikipedia.org/wiki/'+encodeURIComponent(label.replace(/ /g,'_')),
-       commons:'https://commons.wikimedia.org/wiki/File:'+encodeURIComponent(file.replace(/ /g,'_'))};
-  };
-  const req=(async()=>{
-    // Wikipedia REST summaries are simple, CORS enabled, and include historical images.
-    // Retry via the MediaWiki action API if that endpoint is temporarily unavailable.
-    try{
-      const resp=await fetch('https://en.wikipedia.org/api/rest_v1/page/summary/'+articlePath,{mode:'cors',cache:'force-cache'});
-      if(resp.ok){
-        const body=await resp.json();
-        const src=body?.thumbnail?.source || body?.originalimage?.source;
-        const original=body?.originalimage?.source||src;
-        const filename=original?decodeURIComponent(new URL(original).pathname.split('/').pop()||''):'';        const photo=toPhoto(src,body?.title,filename);
-        if(photo)return photo;
-      }
-    }catch(e){}
-    try{
-      const params=new URLSearchParams({action:'query',format:'json',formatversion:'2',redirects:'1',origin:'*',prop:'pageimages',piprop:'thumbnail|name',pithumbsize:'500',titles:title});
-      const resp=await fetch('https://en.wikipedia.org/w/api.php?'+params.toString(),{mode:'cors',cache:'force-cache'});
-      if(!resp.ok)return null;
-      const page=(await resp.json())?.query?.pages?.[0];
-      if(!page||page.missing)return null;
-      return toPhoto(page?.thumbnail?.source,page?.title,page?.pageimage);
-    }catch(e){return null;}
-  })();
-  wikiPortraitCache.set(person.id,req);
-  return req;
+ if(wikiPortraitCache.has(person.id))return wikiPortraitCache.get(person.id);
+ const title=WIKI_ARTICLES[person.id]||person.name;
+ const request=(async()=>{
+  // The Wikipedia summary image is a quick first attempt when it is on Commons.
+  try{   const u='https://en.wikipedia.org/api/rest_v1/page/summary/'+encodeURIComponent(title.replace(/ /g,'_'));
+   const res=await fetch(u,{mode:'cors'});
+   if(res.ok){
+    const b=await res.json(),src=b?.thumbnail?.source||b?.originalimage?.source;
+    const original=b?.originalimage?.source||src;
+    const filename=original?decodeURIComponent(new URL(original).pathname.split('/').pop()):'';
+    const photo=portraitFromFile(filename,src,b?.title||title);
+    if(photo)return photo;
+   }
+  }catch{}
+  // Use Wikidata's P18, attached to the exact article's entity, not a name search.
+  try{
+   const q=new URLSearchParams({action:'wbgetentities',format:'json',origin:'*',sites:'enwiki',titles:title,props:'claims'});
+   const res=await fetch('https://www.wikidata.org/w/api.php?'+q,{mode:'cors'});
+   if(res.ok){
+    const d=await res.json();
+    const entry=Object.values(d?.entities||{})[0];
+    const claims=entry?.claims?.P18||[];
+    for(const claim of claims){
+     const filename=claim?.mainsnak?.datavalue?.value;
+     if(typeof filename!=='string')continue;
+     const pic=await commonsFilePhoto(filename,title);
+     if(pic)return pic;
+    }
+   }
+  }catch{}
+  // If an infobox has a Commons image missed by the summary, request it directly.
+  try{
+   const q=new URLSearchParams({action:'query',format:'json',formatversion:'2',redirects:'1',origin:'*',prop:'pageimages',piprop:'thumbnail|name',pithumbsize:'540',titles:title});
+   const res=await fetch('https://en.wikipedia.org/w/api.php?'+q,{mode:'cors'});
+   if(res.ok){const page=(await res.json())?.query?.pages?.[0];const photo=portraitFromFile(page?.pageimage,page?.thumbnail?.source,title);if(photo)return photo;}
+  }catch{}
+  // Carefully filtered Commons search: require the person's article-name tokens
+  // in the filename, avoiding unrelated people and generic historical objects.
+  try{
+   const terms=[title,person.name];
+   for(const term of terms){
+    const q=new URLSearchParams({action:'query',format:'json',formatversion:'2',origin:'*',generator:'search',gsrsearch:'filetype:bitmap '+term+' portrait',gsrnamespace:'6',gsrlimit:'10',prop:'imageinfo',iiprop:'url|mime|size',iiurlwidth:'540'});
+    const res=await fetch('https://commons.wikimedia.org/w/api.php?'+q,{mode:'cors'});
+    if(!res.ok)continue;
+    const pages=(await res.json())?.query?.pages||[];
+    const words=normalizePortraitWords(term).split(' ').filter(w=>w.length>=4&&!['king','hungary','emperor','holy','roman','moravia','republic','president','austria'].includes(w));
+    for(const page of pages){
+     const pic=page.imageinfo?.[0];if(!pic||!pic.mime?.startsWith('image/'))continue;
+     const file=page.title.replace(/^File:/,'');const text=normalizePortraitWords(file);
+     if(!words.some(w=>text.includes(w)))continue;
+     const photo=portraitFromFile(file,pic.thumburl||pic.url,title);
+     if(photo)return photo;
+    }
+   }
+  }catch{}
+  return null;
+ })();
+ wikiPortraitCache.set(person.id,request);
+ return request;
 }
 async function putPhoto(frame){
   if(!frame||frame.dataset.photoStatus)return;
