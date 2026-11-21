@@ -997,4 +997,90 @@ function drawGame(){
  if(game.type==='identity'){
   if(game.question>=game.questions.length){completeGame();return;}
   let q=game.questions[game.question];target.innerHTML=`${progressBar(game.question,game.questions.length)}<h2 class="quiz-question">Kto som?</h2><p class="quiz-subtitle">Ktorá historická osobnosť je v zozname uvedená s týmto titulom?</p><div class="quote-box">${esc(q.person.title)}</div>${answerChoices(q.options.map(p=>({id:p.id,label:p.name})))}<p class="quiz-feedback" id="quizFeedback"></p><div class="quiz-footer"><button class="btn btn-quiet" id="hintBtn">✧ Nápoveda (−5 bodov)</button><button class="btn btn-gold" id="nextQuestion" disabled>${game.question===game.questions.length-1?'Zobraziť výsledok':'Ďalšia otázka →'}</button></div><p class="hint-text" id="hintText"></p>`;
- }else if(game.type==='truefalse'){
+ }else if(game.type==='truefalse'){  if(game.question>=game.questions.length){completeGame();return;}
+  let q=game.questions[game.question];target.innerHTML=`${progressBar(game.question,game.questions.length)}<h2 class="quiz-question">Pravda či výmysel?</h2><p class="quiz-subtitle">Rozhodni, či táto dvojica súhlasí s priloženým zoznamom osobností.</p><div class="quote-box"><strong>${esc(q.person.name)}</strong><br> ${esc(q.title)}</div><div class="tf-controls"><button class="answer-button" data-tf="true">✓ &nbsp; Pravda</button><button class="answer-button" data-tf="false">× &nbsp; Výmysel</button></div><p class="quiz-feedback" id="quizFeedback"></p><div class="quiz-footer"><small>Za každú správnu odpoveď získaš 10 bodov.</small><button class="btn btn-gold" id="nextQuestion" disabled>${game.question===game.questions.length-1?'Zobraziť výsledok':'Ďalšia otázka →'}</button></div>`;
+ }else if(game.type==='memory'){
+  const matched=game.matched.length;target.innerHTML=`<div class="memory-stats"><span>✧ Spojené dvojice: <b>${matched}/6</b></span><span>Ťahy: <b>${game.moves}</b></span></div><h2 class="quiz-question">Kráľovské pexeso</h2><p class="quiz-subtitle">Odkry meno a k nemu patriaci historický titul. Vybrané dvojice majú jedinečné tituly.</p><div class="memory-grid">${game.cards.map((c,i)=>{const flipped=game.flipped.includes(i),match=game.matched.includes(c.id);return `<button class="memory-card ${flipped?'flipped':''} ${match?'matched':''}" data-flip="${i}" ${match?'disabled':''} aria-label="${flipped||match?esc(c.text):'Otočiť kartu číslo '+(i+1)}"><div class="memory-card-inner"><div class="memory-face back">♛</div><div class="memory-face front"><small>${c.type==='name'?'Osobnosť':'Titul'}</small>${esc(c.text)}</div></div></button>`;}).join('')}</div><p class="quiz-feedback" id="quizFeedback">Dvojice hľadaj pozorne. Každá nájdená dvojica je za 15 bodov.</p><div class="quiz-footer"><small>Počet ťahov: ${game.moves}</small><button class="btn btn-outline" data-restart="memory">Premiešať karty ↻</button></div>`;
+ }else if(game.type==='speed'){
+  if(game.question>=game.questions.length){completeGame();return;}
+  const q=game.questions[game.question];target.innerHTML=`<div class="quiz-topline"><span>RÝCHLA VÝZVA · ${game.question+1}. OSOBNOSŤ</span><span class="speed-timer ${game.remaining<=10?'warning':''}" id="timerDisplay">${game.remaining} s</span></div><div class="quiz-progress"><div id="timerFill" style="width:${game.remaining/45*100}%"></div></div><h2 class="quiz-question">Kam patrí táto osobnosť?</h2><p class="quiz-subtitle">Vyber skupinu podľa historického titulu uvedeného v zozname.</p><div class="quote-box">${esc(q.name)}<br><small style="font-size:13px;color:#9daeb7">${esc(q.title)}</small></div>${answerChoices(CATS.filter(c=>c.id!=='all').map(c=>({id:c.id,label:c.label})))}<p class="quiz-feedback" id="quizFeedback"></p><div class="quiz-footer"><small>Odpovedz čo najrýchlejšie – čas beží.</small><button class="btn btn-gold" id="nextQuestion" disabled>Ďalšia →</button></div>`;
+  if(!game.stopwatchStarted){game.stopwatchStarted=true;startTimer();}
+ }
+}
+function identityAnswer(id){if(!game||game.answered)return;const q=game.questions[game.question];const right=q.person.id===Number(id);game.answered=true;if(right){game.correct++;game.points+=game.hint?5:10;}const el=$('quizFeedback');el.textContent=right?'✓ Správne!':'Správna odpoveď: '+q.person.name;markAnswers(id,q.person.id);$('nextQuestion').disabled=false;const hint=$('hintBtn');if(hint)hint.disabled=true;updateLiveScore();}
+function trueFalseAnswer(str){if(!game||game.answered)return;const q=game.questions[game.question];const right=(str==='true')===q.isTrue;game.answered=true;if(right){game.correct++;game.points+=10;}document.querySelectorAll('[data-tf]').forEach(b=>{b.disabled=true;const cls=(b.dataset.tf==='true')===q.isTrue?'correct':b.dataset.tf===str?'incorrect':null;if(cls)b.classList.add(cls);});$('quizFeedback').textContent=right?'✓ Presne tak!':`Správne je: ${q.isTrue?'Pravda':'Výmysel'}. Skutočný titul podľa zoznamu: ${q.person.title}`;$('nextQuestion').disabled=false;updateLiveScore();}
+function speedAnswer(id){if(!game||game.answered)return;const q=game.questions[game.question];const right=id===q.category;game.answered=true;if(right){game.correct++;game.points+=10;}markAnswers(id,q.category);$('quizFeedback').textContent=right?'✓ Výborne!':`Táto osobnosť patrí do skupiny: ${CATNAMES[q.category]}`;$('nextQuestion').disabled=false;updateLiveScore();}
+function markAnswers(answer,right){document.querySelectorAll('[data-answer]').forEach(b=>{b.disabled=true;if(String(b.dataset.answer)===String(right))b.classList.add('correct');else if(String(b.dataset.answer)===String(answer))b.classList.add('incorrect');});}
+function hint(){if(!game||game.type!=='identity'||game.answered||game.hint)return;game.hint=true;const p=game.questions[game.question].person;const bits=p.name.split(' ');$('hintText').textContent=`Nápoveda: meno začína na „${p.name[0]}“, obsahuje ${bits.length} ${bits.length===1?'slovo':'slová'}. Za správnu odpoveď získaš 5 namiesto 10 bodov.`;$('hintBtn').disabled=true;}
+function nextQuestion(){if(!game||!game.answered)return;game.question++;game.answered=false;game.hint=false;drawGame();}
+function memoryFlip(index){
+ if(!game||game.type!=='memory'||game.busy||game.flipped.includes(index))return;
+ const card=game.cards[index];if(!card||game.matched.includes(card.id))return;
+ game.flipped.push(index);drawGame();
+ if(game.flipped.length===2){game.moves++;const[a,b]=game.flipped,ca=game.cards[a],cb=game.cards[b];game.busy=true;
+  if(ca.id===cb.id&&ca.type!==cb.type){game.matched.push(ca.id);game.points+=15;game.correct=game.matched.length;game.flipped=[];game.busy=false;updateLiveScore();drawGame();if(game.matched.length===6){setTimeout(()=>{if(game&&game.type==='memory')completeGame();},650);}}
+  else{const runId=game;setTimeout(()=>{if(game!==runId)return;game.flipped=[];game.busy=false;drawGame();},820);}
+ }
+}
+function startTimer(){stopTimer();game.deadline=Date.now()+45000;timer=setInterval(()=>{if(!game||game.type!=='speed'){stopTimer();return;}game.remaining=Math.max(0,Math.ceil((game.deadline-Date.now())/1000));const label=$('timerDisplay');if(label){label.textContent=game.remaining+' s';label.classList.toggle('warning',game.remaining<=10);}const fill=$('timerFill');if(fill)fill.style.width=game.remaining/45*100+'%';if(game.remaining===0){stopTimer();completeGame();}},250);}
+function stopTimer(){if(timer!==null){clearInterval(timer);timer=null;}}
+function completeGame(){
+ if(!game||game.finished)return;stopTimer();game.finished=true;
+ const score=game.points,mode=game.type;
+ gamesCompleted++;save('gamesCompleted',gamesCompleted);setPoints(score);
+ bestScore[mode]=Math.max(bestScore[mode]||0,score);save('bestScore',bestScore);
+ const names={identity:'Kto som?',truefalse:'Pravda či výmysel?',memory:'Kráľovské pexeso',speed:'Časová výzva'};
+ const msg=score>=80?'Kráľovský výkon! Výborne poznáš osobnosti.':score>=40?'Skvelá práca! Tvoja historická zbierka vedomostí rastie.':'Každá výprava ťa posunie ďalej. Vyskúšaj to znova.';
+ $('gameContent').innerHTML=`<div class="complete"><div class="complete-medal">🏆</div><div class="section-kicker">VÝZVA DOKONČENÁ</div><h2>${esc(names[mode])}</h2><p>${esc(msg)}</p><div class="complete-points">+ ${score} bodov &nbsp; · &nbsp; Osobný rekord ${bestScore[mode]} bodov</div><div class="complete-actions"><button class="btn btn-gold" data-restart="${mode}">Zahrať znova ↻</button><button class="btn btn-outline" data-show-games="true">Ďalšie hry ↗</button></div></div>`;
+ $('livePoints').textContent=`✦ +${score} bodov`;
+ renderBadges();
+}
+function freshRandom(){const p=PEOPLE[Math.floor(Math.random()*PEOPLE.length)];if(p)openPerson(p.id);}
+function bindEvents(){
+ document.addEventListener('click',e=>{
+  const x=e.target.closest('[data-nav],[data-filter],[data-open],[data-favorite],[data-watched],[data-clear],[data-start-game],[data-answer],[data-tf],[data-flip],[data-restart],[data-show-games],[data-collection],[data-playvideo],[data-close-inline-video]');if(!x)return;
+  const d=x.dataset;
+  if(d.nav)nav(d.nav);
+  else if(d.filter){filter=d.filter;limit=12;renderLibrary();}
+  else if(d.open)openPerson(Number(d.open),currentModal===null);
+  else if(d.favorite)toggleFavorite(Number(d.favorite));
+  else if(d.watched)toggleWatched(Number(d.watched));
+  else if(d.playvideo){const panel=$('inlineVideoPanel'),frame=$('inlineVideoFrame');if(panel&&frame){frame.src=safeURL(d.src||'about:blank');panel.classList.add('is-open');panel.scrollIntoView({behavior:'smooth',block:'nearest'});} }
+  else if(d.closeInlineVideo!==undefined){const panel=$('inlineVideoPanel'),frame=$('inlineVideoFrame');if(frame)frame.src='about:blank';if(panel)panel.classList.remove('is-open');}
+  else if(d.clear){filter='all';search='';$('searchField').value='';limit=12;renderLibrary();}
+  else if(d.startGame)startGame(d.startGame);
+  else if(d.answer!==undefined&&game){if(game.type==='identity')identityAnswer(d.answer);else if(game.type==='speed')speedAnswer(d.answer);}
+  else if(d.tf&&game?.type==='truefalse')trueFalseAnswer(d.tf);
+  else if(d.flip!==undefined&&game?.type==='memory')memoryFlip(Number(d.flip));
+  else if(d.restart)startGame(d.restart);
+  else if(d.showGames)revealGames();
+  else if(d.collection){collectionTab=d.collection;renderCollection();}
+ });
+ document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){closePerson();}
+  if(e.key==='/'&&!/INPUT|TEXTAREA/.test(document.activeElement.tagName)){e.preventDefault();nav('explore');$('searchField').focus();}
+  if((e.key==='Enter'||e.key===' ')&&e.target.classList?.contains('card-medallion')){e.preventDefault();openPerson(Number(e.target.dataset.open));}
+ });
+ $('brandHome').addEventListener('click',e=>{e.preventDefault();nav('explore');});
+ $('closePerson').addEventListener('click',closePerson);
+ $('personOverlay').addEventListener('click',e=>{if(e.target===$('personOverlay'))closePerson();});
+ $('searchField').addEventListener('input',e=>{search=e.target.value.trim();limit=12;renderLibrary();});
+ $('sortSelect').addEventListener('change',e=>{sort=e.target.value;limit=12;if(sort==='random')PEOPLE.forEach(p=>p.randomOrder=Math.random());renderLibrary();});
+ $('loadMoreBtn').addEventListener('click',()=>{limit+=12;renderLibrary();});
+ $('jumpExplore').addEventListener('click',()=>$('library').scrollIntoView({behavior:'smooth'}));
+ $('surpriseBtn').addEventListener('click',freshRandom);
+ $('backToGames').addEventListener('click',revealGames);
+ $('gameContent').addEventListener('click',e=>{if(e.target.closest('#hintBtn'))hint();if(e.target.closest('#nextQuestion')&&!$('nextQuestion').disabled)nextQuestion();});
+ $('menuBtn').addEventListener('click',()=>{const open=document.querySelector('.main-nav').classList.toggle('is-open');$('menuBtn').setAttribute('aria-expanded',String(open));});
+}
+function init(){
+ $('totalCount').textContent=PEOPLE.length;
+ if(PEOPLE.length===0){$('cardGrid').innerHTML='<p>Nepodarilo sa načítať knižnicu.</p>';return;}
+ bindEvents();renderLibrary();renderCollection();renderBadges();updateStats();
+ if(location.hash==='#hry')nav('games');else if(location.hash==='#zbierka')nav('collection');
+}
+init();
+})();
+
+  </script>
+</body></html>
