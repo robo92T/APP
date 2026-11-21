@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#0a1b29">
   <meta name="robots" content="noindex,nofollow">
+  <meta name="atlas-version" content="4.0-real-portraits">
   <meta name="description" content="Interaktívny Atlas dejín: 78 historických osobností, videopríbehy, historické karty a štyri učebné hry.">
   <title>Atlas dejín | Objavuj · Hraj · Spoznávaj</title>
   <style>
@@ -62,6 +63,19 @@
  .inline-video-shell{aspect-ratio:16/12}
 }
 
+
+/* === Atlas dejín V4: verified Wikipedia artwork or illustrated fallback === */
+.portrait-frame{isolation:isolate;position:relative}
+.portrait-frame>.portrait-svg{position:absolute;inset:0;z-index:0}
+.portrait-frame .actual-portrait{display:block;position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 28%;z-index:1;opacity:0;transform:scale(1.08);transition:opacity .45s ease,transform .65s ease;filter:saturate(.78) contrast(1.04) sepia(.08)}
+.portrait-frame.has-photo .actual-portrait{opacity:1;transform:scale(1)}
+.card-medallion:hover .actual-portrait{transform:scale(1.09)}
+.photo-attribution{font-size:11px!important;line-height:1.65!important;color:#adbac3!important;margin:8px 0 18px!important}
+.photo-attribution a{color:#e4c58b;text-decoration:underline;text-underline-offset:3px}
+.photo-attribution .photo-label{display:inline-block;color:#e8d6b4;font-weight:800;font-size:10px;letter-spacing:.5px;margin-right:5px}
+.video-embed-note{font-size:11px;color:#bac6ce;line-height:1.65;padding:12px 14px;border-bottom:1px solid rgba(232,192,135,.14)}
+.version-pill{display:inline-flex;align-items:center;background:rgba(222,183,116,.12);border:1px solid rgba(224,188,137,.28);border-radius:999px;padding:4px 10px;color:#ebc88f;font-weight:800;letter-spacing:1px;font-size:10px}
+@media(max-width:740px){.photo-attribution{font-size:10px!important}}
 </style>
 
 
@@ -79,7 +93,7 @@
       <div class="shell">
         <section class="hero" aria-labelledby="heroTitle">
           <div class="hero-grain"></div><div class="hero-orbit orbit-one"></div><div class="hero-orbit orbit-two"></div>
-          <div class="hero-content"><div class="overline"><i></i> KRÁĽOVSTVO HISTORICKÝCH PRÍBEHOV</div><h1 id="heroTitle">História, ktorá <em>ožíva.</em></h1><p>Odhaľ príbehy kniežat, kráľov, cisárov a prezidentov. Zbieraj karty, otváraj videá a vyskúšaj, koľko toho vieš.</p><div class="hero-buttons"><button class="btn btn-gold" id="jumpExplore">Objavovať osobnosti <span>↗</span></button><button class="btn btn-outline" data-nav="games">Zahrať si hry <span>✧</span></button></div><div class="hero-foot"><span>✦ 78 historických kariet</span><span>✦ 4 interaktívne hry</span><span>✦ bez prihlásenia</span></div></div>
+          <div class="hero-content"><div class="overline"><i></i> KRÁĽOVSTVO HISTORICKÝCH PRÍBEHOV</div><h1 id="heroTitle">História, ktorá <em>ožíva.</em></h1><p>Odhaľ príbehy kniežat, kráľov, cisárov a prezidentov. Zbieraj karty, otváraj videá a vyskúšaj, koľko toho vieš.</p><div class="hero-buttons"><button class="btn btn-gold" id="jumpExplore">Objavovať osobnosti <span>↗</span></button><button class="btn btn-outline" data-nav="games">Zahrať si hry <span>✧</span></button></div><div class="hero-foot"><span>✦ 78 historických kariet</span><span>✦ 4 interaktívne hry</span><span>✦ bez prihlásenia</span><span>✦ V4 · SKUTOČNÉ PORTRÉTY</span></div></div>
           <div class="hero-gallery" aria-hidden="true"><div class="illustration-halo"></div><div class="display-card back-card"><div class="display-inner"><span>❦</span><b>HISTORIA</b></div></div><div class="display-card middle-card"><div class="display-inner"><span>♛</span><b>REGNUM</b></div></div><div class="display-card front-card"><div class="card-corner left-corner">✧</div><div class="card-corner right-corner">✧</div><div class="display-crest">♛</div><div class="display-name">MÁRIA TERÉZIA</div><div class="display-sub">Kráľovská kolekcia</div><div class="display-bottom">✦ &nbsp; ATLAS DEJÍN &nbsp; ✦</div></div><div class="hero-stardust">✦</div></div>
         </section>
         <div class="metrics" aria-label="Prehľad knižnice"><div class="metric"><div class="metric-ico">♛</div><div><strong id="totalCount">78</strong><span>Historických osobností</span></div></div><div class="metric"><div class="metric-ico"><span class="play-tri">▶</span></div><div><strong>78</strong><span>Videopríbehov</span></div></div><div class="metric"><div class="metric-ico">◇</div><div><strong id="watchedCount">0</strong><span>Objavených príbehov</span></div></div><div class="metric"><div class="metric-ico">✧</div><div><strong id="favCount">0</strong><span>Uložených do zbierky</span></div></div></div>
@@ -90,7 +104,7 @@
     <section id="gamesView" class="view" aria-labelledby="gamesTitle"><div class="shell inner-page"><div class="page-hero games-hero"><div class="section-kicker">HERNÁ SIEŇ</div><h1 id="gamesTitle">Učenie, ktoré je <em>hra.</em></h1><p>Štyri odlišné výzvy. Vyber si hru, zbieraj body a odomykaj svoje historické odznaky.</p><div class="game-highscore">✦ <span id="gamesTotalScore">0</span> tvojich bodov</div></div><div class="game-selector" id="gameSelector"><button class="game-tile" data-start-game="identity"><span class="game-tile-icon">♛</span><small>01 · KVÍZ</small><h3>Kto som?</h3><p>Uhádni osobnosť podľa jej historického titulu.</p><b>Spustiť hru <span>↗</span></b></button><button class="game-tile" data-start-game="truefalse"><span class="game-tile-icon">◈</span><small>02 · ROZHODOVANIE</small><h3>Pravda či výmysel?</h3><p>Patrí titul naozaj uvedenej osobnosti?</p><b>Spustiť hru <span>↗</span></b></button><button class="game-tile" data-start-game="memory"><span class="game-tile-icon">▦</span><small>03 · PAMÄŤ</small><h3>Kráľovské pexeso</h3><p>Hľadaj dvojice mien a správnych titulov.</p><b>Spustiť hru <span>↗</span></b></button><button class="game-tile" data-start-game="speed"><span class="game-tile-icon">⚡</span><small>04 · RÝCHLOSŤ</small><h3>Časová výzva</h3><p>Roztrieď osobnosti, kým vyprší čas.</p><b>Spustiť hru <span>↗</span></b></button></div><div class="game-stage" id="gameStage" hidden><div class="stage-toolbar"><button class="back-btn" id="backToGames">← Všetky hry</button><span class="stage-score" id="livePoints">✦ 0 bodov</span></div><div id="gameContent" aria-live="polite"></div></div><section class="award-section" aria-labelledby="badgesTitle"><div class="section-kicker">ODMENY ZA OBJAVOVANIE</div><h2 id="badgesTitle">Tvoje odznaky</h2><p>Postupne si ich odomkneš pri objavovaní videí a hraní hier.</p><div class="badge-grid" id="badgesGrid"></div></section></div></section>
     <section id="collectionView" class="view" aria-labelledby="collectionTitle"><div class="shell inner-page"><div class="page-hero collection-hero"><div class="section-kicker">MOJA ZBIERKA</div><h1 id="collectionTitle">Tvoja cesta <em>dejinami.</em></h1><p>Ukladaj si obľúbené osobnosti a sleduj, ktoré príbehy si už objavil.</p><div class="collection-progress"><span id="progressLabel">0 z 78 príbehov</span><div class="progress-line"><div id="progressBar" style="width:0%"></div></div></div></div><div class="collection-tabs" role="group" aria-label="Typ zbierky"><button class="tab active" data-collection="saved">♡ Obľúbené <span id="savedTabCount">0</span></button><button class="tab" data-collection="watched">✓ Pozreté <span id="watchedTabCount">0</span></button></div><div class="card-grid" id="collectionGrid"></div><div class="empty-state" id="collectionEmpty" hidden><span>♧</span><h3>Tu sa tvoja zbierka začne.</h3><p>Otvor niektorú historickú kartu a ulož si ju medzi obľúbené alebo označ video ako pozreté.</p><button class="btn btn-gold" data-nav="explore">Objaviť osobnosti ↗</button></div><div class="collection-note">Tvoj postup sa ukladá iba v tomto prehliadači a na tomto zariadení. Nevyžaduje sa účet.</div></div></section>
   </main>
-  <footer class="footer"><div class="shell footer-inner"><span class="footer-brand">♛ &nbsp; ATLAS <b>DEJÍN</b></span><span>Interaktívna vzdelávacia knižnica · ZŠ Strážnická</span><span>Video odkazy: <a href="https://worldsmonarchs.com/" rel="noopener noreferrer" target="_blank">World’s Monarchs ↗</a></span></div></footer>
+  <footer class="footer"><div class="shell footer-inner"><span class="footer-brand">♛ &nbsp; ATLAS <b>DEJÍN</b> <span class="version-pill">VERZIA 4 · PORTRÉTY</span></span><span>Interaktívna vzdelávacia knižnica · ZŠ Strážnická</span><span>Video odkazy: <a href="https://worldsmonarchs.com/" rel="noopener noreferrer" target="_blank">World’s Monarchs ↗</a></span></div></footer>
 </div>
 <div class="modal-backdrop" id="personOverlay" hidden><div class="person-dialog" role="dialog" aria-modal="true" aria-labelledby="personDialogTitle"><button class="modal-close" id="closePerson" aria-label="Zavrieť okno">×</button><div class="dialog-left" id="dialogLeft"></div><div class="dialog-right" id="dialogRight"></div></div></div>
 <div class="toast-holder" id="toastHolder" role="status" aria-live="polite"></div>
@@ -751,19 +765,165 @@ function portraitSVG(p,variant='card'){
  return `<svg class="portrait-svg" viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Ilustrovaný portrét ${svgEsc(p.name)}"><defs><linearGradient id="bg${p.id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#314d62"/><stop offset="100%" stop-color="#152534"/></linearGradient><linearGradient id="robe${p.id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="${garment}"/><stop offset="100%" stop-color="#1c2430"/></linearGradient></defs><rect width="240" height="240" fill="url(#bg${p.id})"/><circle cx="120" cy="95" r="86" fill="rgba(240,205,144,.10)"/><circle cx="120" cy="95" r="74" fill="rgba(240,205,144,.08)" stroke="rgba(255,228,175,.18)"/>${adornTop}<path d="${robeShape}" fill="url(#robe${p.id})"/><ellipse cx="120" cy="${bustY+30}" rx="44" ry="30" fill="rgba(0,0,0,.16)"/><path d="M72 ${bustY} Q120 116 168 ${bustY} L156 198 Q120 212 84 198 Z" fill="${garment}" opacity=".88"/><path d="M70 ${hairH} Q78 40 120 38 Q162 40 170 ${hairH} L170 112 Q160 96 152 92 Q150 126 120 132 Q90 126 88 92 Q79 99 70 112 Z" fill="${hairBase}"/><ellipse cx="120" cy="${faceY+28}" rx="34" ry="42" fill="${skin}"/><path d="M103 ${faceY+22} q8 -6 16 0" stroke="#5a3624" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M121 ${faceY+22} q8 -6 16 0" stroke="#5a3624" stroke-width="3" fill="none" stroke-linecap="round"/><circle cx="107" cy="${faceY+34}" r="3.4" fill="#2d221f"/><circle cx="133" cy="${faceY+34}" r="3.4" fill="#2d221f"/><path d="M120 ${faceY+38} L116 ${faceY+53} Q120 ${faceY+56} 124 ${faceY+53} Z" fill="rgba(133,77,58,.45)"/>${mouth}<path d="M92 ${faceY+24} Q120 ${faceY-1} 148 ${faceY+24}" fill="none" stroke="${hairBase}" stroke-width="10" stroke-linecap="round"/><circle cx="54" cy="182" r="18" fill="rgba(0,0,0,.12)"/><text x="54" y="188" text-anchor="middle" font-size="22" fill="#f4ddb1" font-family="Georgia,serif">${categoryMark}</text></svg>`;
 }
 
+
+// Explicitly mapped article titles prevent confusing similarly named rulers.
+const WIKI_ARTICLES = {
+ "1": "Albert II of Germany",
+ "2": "Andrej Kiska",
+ "3": "Antonín Novotný",
+ "4": "Antonín Zápotocký",
+ "5": "Béla I of Hungary",
+ "6": "Béla II of Hungary",
+ "7": "Béla III of Hungary",
+ "8": "Béla IV of Hungary",
+ "9": "Edvard Beneš",
+ "10": "Emil Hácha",
+ "11": "Ferdinand I, Holy Roman Emperor",
+ "12": "Ferdinand I of Austria",
+ "13": "Ferdinand II, Holy Roman Emperor",
+ "14": "Ferdinand III, Holy Roman Emperor",
+ "15": "Francis II, Holy Roman Emperor",
+ "16": "Franz Joseph I of Austria",
+ "17": "Géza, Grand Prince of the Hungarians",
+ "18": "Géza I of Hungary",
+ "19": "Géza II of Hungary",
+ "20": "Gustáv Husák",
+ "21": "Emeric, King of Hungary",
+ "22": "Ivan Gašparovič",
+ "23": "John Zápolya",
+ "24": "Joseph I, Holy Roman Emperor",
+ "25": "Joseph II, Holy Roman Emperor",
+ "26": "Jozef Tiso",
+ "27": "Charles I of Austria",
+ "28": "Charles I of Hungary",
+ "29": "Charles III of Naples",
+ "30": "Charles VI, Holy Roman Emperor",
+ "31": "Klement Gottwald",
+ "32": "Kocel",
+ "33": "Coloman, King of Hungary",
+ "34": "Ladislaus I of Hungary",
+ "35": "Ladislaus II of Hungary",
+ "36": "Ladislaus III of Hungary",
+ "37": "Ladislaus IV of Hungary",
+ "38": "Ladislaus the Posthumous",
+ "39": "Leopold I, Holy Roman Emperor",
+ "40": "Leopold II, Holy Roman Emperor",
+ "41": "Louis I of Hungary",
+ "42": "Louis II of Hungary",
+ "43": "Ludvík Svoboda",
+ "44": "Maria Theresa",
+ "45": "Mary, Queen of Hungary",
+ "46": "Matthias, Holy Roman Emperor",
+ "47": "Matthias Corvinus",
+ "48": "Maximilian II, Holy Roman Emperor",
+ "49": "Michal Kováč",
+ "50": "Mojmir I of Moravia",
+ "51": "Mojmír II of Moravia",
+ "52": "Andrew I of Hungary",
+ "53": "Andrew II of Hungary",
+ "54": "Andrew III of Hungary",
+ "55": "Otto, King of Hungary",
+ "56": "Peter Orseolo",
+ "57": "Peter Pellegrini",
+ "58": "Pribina",
+ "59": "Rastislav of Moravia",
+ "60": "Rudolf II, Holy Roman Emperor",
+ "61": "Rudolf Schuster",
+ "62": "Solomon, King of Hungary",
+ "63": "Samo",
+ "64": "Samuel Aba",
+ "65": "Stephen I of Hungary",
+ "66": "Stephen II of Hungary",
+ "67": "Stephen III of Hungary",
+ "68": "Stephen IV of Hungary",
+ "69": "Stephen V of Hungary",
+ "70": "Svatopluk I of Moravia",
+ "71": "Svatopluk II",
+ "72": "Tomáš Garrigue Masaryk",
+ "73": "Václav Havel",
+ "74": "Wenceslaus III of Bohemia",
+ "75": "Władysław III of Poland",
+ "76": "Vladislaus II of Hungary",
+ "77": "Sigismund, Holy Roman Emperor",
+ "78": "Zuzana Čaputová"
+};
+const wikiPortraitCache = new Map();
+function fetchWikiPortrait(person){
+  if(wikiPortraitCache.has(person.id)) return wikiPortraitCache.get(person.id);
+  const title=WIKI_ARTICLES[person.id];
+  if(!title)return Promise.resolve(null);
+  const req=(async()=>{
+    try{
+      const params=new URLSearchParams({action:'query',format:'json',formatversion:'2',redirects:'1',origin:'*',prop:'pageimages',piprop:'thumbnail|name',pithumbsize:'500',titles:title});
+      const response=await fetch('https://en.wikipedia.org/w/api.php?'+params.toString());
+      if(!response.ok)return null;
+      const body=await response.json();
+      const page=body?.query?.pages?.[0];
+      if(!page||page.missing||!page.thumbnail?.source||!page.pageimage)return null;
+      const imageURL=new URL(page.thumbnail.source);
+      if(imageURL.protocol!=='https:'||imageURL.hostname!=='upload.wikimedia.org')return null;
+      return {src:imageURL.href, title:page.title, file:page.pageimage,
+        source:'https://en.wikipedia.org/wiki/'+encodeURIComponent(page.title.replace(/ /g,'_')),
+        commons:'https://commons.wikimedia.org/wiki/File:'+encodeURIComponent(page.pageimage.replace(/ /g,'_'))};
+    }catch(e){return null;}
+  })();
+  wikiPortraitCache.set(person.id,req);return req;
+}
+async function putPhoto(frame){
+  if(!frame||frame.dataset.photoStatus)return;
+  const id=Number(frame.dataset.personId),p=PEOPLE.find(p=>p.id===id);if(!p)return;
+  frame.dataset.photoStatus='loading';
+  const photo=await fetchWikiPortrait(p);
+  if(!frame.isConnected)return;
+  if(!photo){frame.dataset.photoStatus='fallback';return;}
+  const img=document.createElement('img');img.className='actual-portrait';
+  img.alt='Historická fotografia alebo výtvarné vyobrazenie: '+p.name;
+  img.loading=frame.closest('.person-dialog')?'eager':'lazy';img.decoding='async';
+  img.addEventListener('load',()=>{if(frame.isConnected){frame.classList.add('has-photo');frame.dataset.photoStatus='real';}}, {once:true});
+  img.addEventListener('error',()=>{frame.dataset.photoStatus='fallback';img.remove();}, {once:true});
+  img.src=photo.src;frame.append(img);
+}
+function enrichPortraits(root=document){
+  root.querySelectorAll('.portrait-frame[data-person-id]').forEach(putPhoto);
+}
+async function imageCredits(person){
+  const el=$('portraitCredit');if(!el)return;
+  const photo=await fetchWikiPortrait(person);
+  if(currentModal!==person.id||!el.isConnected)return;
+  if(!photo){el.textContent='Ilustračná kresba · pri tejto osobe sa nepodarilo získať vhodné dobové vyobrazenie.';return;}
+  el.replaceChildren();
+  const lab=document.createElement('span');lab.className='photo-label';lab.textContent='Historické vyobrazenie:';el.append(lab);
+  const link=document.createElement('a');link.href=photo.commons;link.target='_blank';link.rel='noopener noreferrer';link.textContent='Wikimedia Commons';el.append(link);
+  const details=document.createElement('span');details.textContent=' · Autor a licencia: pozri zdroj';el.append(details);
+  try{
+    const params=new URLSearchParams({action:'query',format:'json',formatversion:'2',origin:'*',prop:'imageinfo',iiprop:'extmetadata',titles:'File:'+photo.file});
+    const resp=await fetch('https://commons.wikimedia.org/w/api.php?'+params.toString());
+    if(!resp.ok)return;
+    const d=await resp.json();
+    const meta=d?.query?.pages?.[0]?.imageinfo?.[0]?.extmetadata;
+    if(!meta||currentModal!==person.id)return;
+    // Wikimedia may provide HTML in credit fields; strip markup before using textContent.
+    const strip=(value)=>String(value||'').replace(/<[^>]*>/g,'').replace(/&amp;/g,'&').replace(/&nbsp;/g,' ').replace(/&quot;/g,'\"');
+    const author=strip(meta.Artist?.value||meta.Credit?.value).trim().slice(0,100);
+    const license=strip(meta.LicenseShortName?.value||'').trim().slice(0,80);
+    details.textContent=' · '+[author,license].filter(Boolean).join(' · ');
+  }catch(e){}
+}
+
 function card(p){
- return `<article class="person-card cat-${p.category}"><div class="card-art"><div class="card-medallion" data-open="${p.id}" role="button" tabindex="0" aria-label="Otvoriť kartu ${esc(p.name)}"><div class="portrait-frame">${portraitSVG(p,'card')}</div><span class="art-ribbon">${esc(CATNAMES[p.category])}</span>${watched.has(p.id)?'<span class="watched-dot" title="Pozreté">✓</span>':''}</div></div><button class="heart-btn ${favorites.has(p.id)?'saved':''}" data-favorite="${p.id}" aria-label="${favorites.has(p.id)?'Odobrať z obľúbených':'Uložiť do obľúbených'}: ${esc(p.name)}">${favorites.has(p.id)?'♥':'♡'}</button><div class="card-info"><span class="card-number">KARTA / ${String(p.id).padStart(3,'0')}</span><h3 class="person-name">${esc(p.name)}</h3><p class="person-title">${esc(p.title)}</p><div class="card-bottom"><span>${watched.has(p.id)?'✓ Pozreté':'◷ Neobjavené'}</span><button data-open="${p.id}">Otvoriť kartu ↗</button></div></div></article>`;
+ return `<article class="person-card cat-${p.category}"><div class="card-art"><div class="card-medallion" data-open="${p.id}" role="button" tabindex="0" aria-label="Otvoriť kartu ${esc(p.name)}"><div class="portrait-frame" data-person-id="${p.id}">${portraitSVG(p,'card')}</div><span class="art-ribbon">${esc(CATNAMES[p.category])}</span>${watched.has(p.id)?'<span class="watched-dot" title="Pozreté">✓</span>':''}</div></div><button class="heart-btn ${favorites.has(p.id)?'saved':''}" data-favorite="${p.id}" aria-label="${favorites.has(p.id)?'Odobrať z obľúbených':'Uložiť do obľúbených'}: ${esc(p.name)}">${favorites.has(p.id)?'♥':'♡'}</button><div class="card-info"><span class="card-number">KARTA / ${String(p.id).padStart(3,'0')}</span><h3 class="person-name">${esc(p.name)}</h3><p class="person-title">${esc(p.title)}</p><div class="card-bottom"><span>${watched.has(p.id)?'✓ Pozreté':'◷ Neobjavené'}</span><button data-open="${p.id}">Otvoriť kartu ↗</button></div></div></article>`;
 }
 function renderLibrary(){
  categoryChoices();const result=filteredPeople();const visible=result.slice(0,limit);
  $('resultsStatus').textContent=`Zobrazených ${visible.length} z ${result.length} kariet`;
  $('cardGrid').innerHTML=visible.length?visible.map(card).join(''):`<div class="empty-state" style="grid-column:1/-1"><span>⌕</span><h3>Nenašli sme žiadnu kartu.</h3><p>Skús iné meno alebo zmeň kategóriu.</p><button class="btn btn-gold" data-clear="true">Zobraziť všetky ↗</button></div>`;
+ enrichPortraits($('cardGrid'));
  $('loadMoreBtn').parentElement.hidden=visible.length>=result.length;
 }
 function renderCollection(){
  document.querySelectorAll('[data-collection]').forEach(e=>e.classList.toggle('active',e.dataset.collection===collectionTab));
  let out=PEOPLE.filter(p=>collectionTab==='saved'?favorites.has(p.id):watched.has(p.id));
- $('collectionGrid').innerHTML=out.map(card).join('');$('collectionEmpty').hidden=out.length>0;
+ $('collectionGrid').innerHTML=out.map(card).join('');$('collectionEmpty').hidden=out.length>0;enrichPortraits($('collectionGrid'));
 }
 function toggleFavorite(id){
  const p=PEOPLE.find(x=>x.id===id);if(!p)return;
@@ -779,9 +939,10 @@ function openPerson(id,focus=true){
  const p=PEOPLE.find(x=>x.id===id);if(!p)return;
  if(focus)lastFocus=document.activeElement;
  currentModal=id;const pos=PEOPLE.findIndex(x=>x.id===id);const prev=PEOPLE[(pos+PEOPLE.length-1)%PEOPLE.length];const next=PEOPLE[(pos+1)%PEOPLE.length];
- $('dialogLeft').innerHTML=`<div class="dialog-ornament"><div class="dialog-portrait-wrap"><div class="dialog-badge">${esc(CATNAMES[p.category])}</div><div class="dialog-medallion"><div class="portrait-frame">${portraitSVG(p,'dialog')}</div></div><div class="dialog-quote">${esc(p.name)}</div><div class="dialog-meta-mini">HISTORICKÁ KARTA #${String(p.id).padStart(3,'0')}</div></div></div>`;
- $('dialogRight').innerHTML=`<div class="dialog-kicker">${esc(CATNAMES[p.category])} &nbsp; · &nbsp; KARTA ${String(p.id).padStart(3,'0')}</div><h2 id="personDialogTitle">${esc(p.name)}</h2><p>${esc(p.title)}</p><div class="dialog-actions"><button class="btn btn-gold" data-playvideo="${p.id}" data-src="${esc(safeURL(p.url))}">▶ &nbsp; Prehrať videopríbeh v aplikácii</button><button class="btn btn-outline" data-watched="${p.id}">${watched.has(id)?'✓ Označené ako pozreté':'✓ Označiť video ako pozreté'}</button><button class="btn btn-quiet" data-favorite="${p.id}">${favorites.has(id)?'♥ Odobrať z mojej zbierky':'♡ Pridať do mojej zbierky'}</button></div><div class="inline-video-panel" id="inlineVideoPanel"><div class="inline-video-head"><strong>Videopríbeh: ${esc(p.name)}</strong><button class="inline-video-close" data-close-inline-video="true">Zavrieť video</button></div><div class="inline-video-shell"><iframe id="inlineVideoFrame" title="Videopríbeh ${esc(p.name)}" loading="lazy" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div><div class="video-panel-meta">Video sa pokúsi načítať priamo v aplikácii. Ak externá stránka nepovolí vloženie do rámca, použi <a href="${esc(safeURL(p.url))}" target="_blank" rel="noopener noreferrer">otvorenie originálu ↗</a>.</div></div><div class="dialog-meta">Vizuál kariet je teraz upravený do jednotného ilustrovaného štýlu inšpirovaného zberateľskou sériou World’s Monarchs. Video sa už pokúša otvárať priamo v aplikácii. <strong>Označenie „pozreté“ nie je automatické</strong> – nastavuješ si ho sám alebo sama.</div><div class="dialog-nav"><button data-open="${prev.id}">← Predchádzajúca</button><button data-open="${next.id}">Nasledujúca →</button></div>`;
+ $('dialogLeft').innerHTML=`<div class="dialog-ornament"><div class="dialog-portrait-wrap"><div class="dialog-badge">${esc(CATNAMES[p.category])}</div><div class="dialog-medallion"><div class="portrait-frame" data-person-id="${p.id}">${portraitSVG(p,'dialog')}</div></div><div class="dialog-quote">${esc(p.name)}</div><div class="dialog-meta-mini">HISTORICKÁ KARTA #${String(p.id).padStart(3,'0')}</div></div></div>`;
+ $('dialogRight').innerHTML=`<div class="dialog-kicker">${esc(CATNAMES[p.category])} &nbsp; · &nbsp; KARTA ${String(p.id).padStart(3,'0')}</div><h2 id="personDialogTitle">${esc(p.name)}</h2><p>${esc(p.title)}</p><div class="photo-attribution" id="portraitCredit">Vyhľadávam historické vyobrazenie...</div><div class="dialog-actions"><button class="btn btn-gold" data-playvideo="${p.id}" data-src="${esc(safeURL(p.url))}">▶ &nbsp; Zobraziť videopríbeh tu</button><button class="btn btn-outline" data-watched="${p.id}">${watched.has(id)?'✓ Označené ako pozreté':'✓ Označiť video ako pozreté'}</button><button class="btn btn-quiet" data-favorite="${p.id}">${favorites.has(id)?'♥ Odobrať z mojej zbierky':'♡ Pridať do mojej zbierky'}</button></div><div class="inline-video-panel" id="inlineVideoPanel"><div class="inline-video-head"><strong>Videopríbeh: ${esc(p.name)}</strong><button class="inline-video-close" data-close-inline-video="true">Zavrieť video</button></div><div class="video-embed-note">Pôvodný odkaz vedie na stránku World’s Monarchs. Ak táto stránka nepovoľuje vloženie, prehrávanie tu nebude možné.</div><div class="inline-video-shell"><iframe id="inlineVideoFrame" title="Videopríbeh ${esc(p.name)}" loading="lazy" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div><div class="video-panel-meta">Video sa pokúsi načítať priamo v aplikácii. Ak externá stránka nepovolí vloženie do rámca, použi <a href="${esc(safeURL(p.url))}" target="_blank" rel="noopener noreferrer">otvorenie originálu ↗</a>.</div></div><div class="dialog-meta">Vizuál kariet je teraz upravený do jednotného ilustrovaného štýlu inšpirovaného zberateľskou sériou World’s Monarchs. Video sa už pokúša otvárať priamo v aplikácii. <strong>Označenie „pozreté“ nie je automatické</strong> – nastavuješ si ho sám alebo sama.</div><div class="dialog-nav"><button data-open="${prev.id}">← Predchádzajúca</button><button data-open="${next.id}">Nasledujúca →</button></div>`;
  $('personOverlay').hidden=false;document.body.style.overflow='hidden';
+ enrichPortraits($('dialogLeft'));imageCredits(p);
  if(focus)$('closePerson').focus();
 }
 function closePerson(){if(currentModal===null)return;currentModal=null;$('personOverlay').hidden=true;const frame=$('inlineVideoFrame');const panel=$('inlineVideoPanel');if(frame)frame.src='about:blank';if(panel)panel.classList.remove('is-open');document.body.style.overflow='';if(lastFocus&&document.contains(lastFocus))lastFocus.focus();}
@@ -837,63 +998,3 @@ function memoryFlip(index){
 }
 function startTimer(){stopTimer();game.deadline=Date.now()+45000;timer=setInterval(()=>{if(!game||game.type!=='speed'){stopTimer();return;}game.remaining=Math.max(0,Math.ceil((game.deadline-Date.now())/1000));const label=$('timerDisplay');if(label){label.textContent=game.remaining+' s';label.classList.toggle('warning',game.remaining<=10);}const fill=$('timerFill');if(fill)fill.style.width=game.remaining/45*100+'%';if(game.remaining===0){stopTimer();completeGame();}},250);}
 function stopTimer(){if(timer!==null){clearInterval(timer);timer=null;}}
-function completeGame(){
- if(!game||game.finished)return;stopTimer();game.finished=true;
- const score=game.points,mode=game.type;
- gamesCompleted++;save('gamesCompleted',gamesCompleted);setPoints(score);
- bestScore[mode]=Math.max(bestScore[mode]||0,score);save('bestScore',bestScore);
- const names={identity:'Kto som?',truefalse:'Pravda či výmysel?',memory:'Kráľovské pexeso',speed:'Časová výzva'};
- const msg=score>=80?'Kráľovský výkon! Výborne poznáš osobnosti.':score>=40?'Skvelá práca! Tvoja historická zbierka vedomostí rastie.':'Každá výprava ťa posunie ďalej. Vyskúšaj to znova.';
- $('gameContent').innerHTML=`<div class="complete"><div class="complete-medal">🏆</div><div class="section-kicker">VÝZVA DOKONČENÁ</div><h2>${esc(names[mode])}</h2><p>${esc(msg)}</p><div class="complete-points">+ ${score} bodov &nbsp; · &nbsp; Osobný rekord ${bestScore[mode]} bodov</div><div class="complete-actions"><button class="btn btn-gold" data-restart="${mode}">Zahrať znova ↻</button><button class="btn btn-outline" data-show-games="true">Ďalšie hry ↗</button></div></div>`;
- $('livePoints').textContent=`✦ +${score} bodov`;
- renderBadges();
-}
-function freshRandom(){const p=PEOPLE[Math.floor(Math.random()*PEOPLE.length)];if(p)openPerson(p.id);}
-function bindEvents(){
- document.addEventListener('click',e=>{
-  const x=e.target.closest('[data-nav],[data-filter],[data-open],[data-favorite],[data-watched],[data-clear],[data-start-game],[data-answer],[data-tf],[data-flip],[data-restart],[data-show-games],[data-collection],[data-playvideo],[data-close-inline-video]');if(!x)return;
-  const d=x.dataset;
-  if(d.nav)nav(d.nav);
-  else if(d.filter){filter=d.filter;limit=12;renderLibrary();}
-  else if(d.open)openPerson(Number(d.open),currentModal===null);
-  else if(d.favorite)toggleFavorite(Number(d.favorite));
-  else if(d.watched)toggleWatched(Number(d.watched));
-  else if(d.playvideo){const panel=$('inlineVideoPanel'),frame=$('inlineVideoFrame');if(panel&&frame){frame.src=safeURL(d.src||'about:blank');panel.classList.add('is-open');panel.scrollIntoView({behavior:'smooth',block:'nearest'});} }
-  else if(d.closeInlineVideo!==undefined){const panel=$('inlineVideoPanel'),frame=$('inlineVideoFrame');if(frame)frame.src='about:blank';if(panel)panel.classList.remove('is-open');}
-  else if(d.clear){filter='all';search='';$('searchField').value='';limit=12;renderLibrary();}
-  else if(d.startGame)startGame(d.startGame);
-  else if(d.answer!==undefined&&game){if(game.type==='identity')identityAnswer(d.answer);else if(game.type==='speed')speedAnswer(d.answer);}
-  else if(d.tf&&game?.type==='truefalse')trueFalseAnswer(d.tf);
-  else if(d.flip!==undefined&&game?.type==='memory')memoryFlip(Number(d.flip));
-  else if(d.restart)startGame(d.restart);
-  else if(d.showGames)revealGames();
-  else if(d.collection){collectionTab=d.collection;renderCollection();}
- });
- document.addEventListener('keydown',e=>{
-  if(e.key==='Escape'){closePerson();}
-  if(e.key==='/'&&!/INPUT|TEXTAREA/.test(document.activeElement.tagName)){e.preventDefault();nav('explore');$('searchField').focus();}
-  if((e.key==='Enter'||e.key===' ')&&e.target.classList?.contains('card-art')){e.preventDefault();openPerson(Number(e.target.dataset.open));}
- });
- $('brandHome').addEventListener('click',e=>{e.preventDefault();nav('explore');});
- $('closePerson').addEventListener('click',closePerson);
- $('personOverlay').addEventListener('click',e=>{if(e.target===$('personOverlay'))closePerson();});
- $('searchField').addEventListener('input',e=>{search=e.target.value.trim();limit=12;renderLibrary();});
- $('sortSelect').addEventListener('change',e=>{sort=e.target.value;limit=12;if(sort==='random')PEOPLE.forEach(p=>p.randomOrder=Math.random());renderLibrary();});
- $('loadMoreBtn').addEventListener('click',()=>{limit+=12;renderLibrary();});
- $('jumpExplore').addEventListener('click',()=>$('library').scrollIntoView({behavior:'smooth'}));
- $('surpriseBtn').addEventListener('click',freshRandom);
- $('backToGames').addEventListener('click',revealGames);
- $('gameContent').addEventListener('click',e=>{if(e.target.closest('#hintBtn'))hint();if(e.target.closest('#nextQuestion')&&!$('nextQuestion').disabled)nextQuestion();});
- $('menuBtn').addEventListener('click',()=>{const open=document.querySelector('.main-nav').classList.toggle('is-open');$('menuBtn').setAttribute('aria-expanded',String(open));});
-}
-function init(){
- $('totalCount').textContent=PEOPLE.length;
- if(PEOPLE.length===0){$('cardGrid').innerHTML='<p>Nepodarilo sa načítať knižnicu.</p>';return;}
- bindEvents();renderLibrary();renderCollection();renderBadges();updateStats();
- if(location.hash==='#hry')nav('games');else if(location.hash==='#zbierka')nav('collection');
-}
-init();
-})();
-
-  </script>
-</body></html>
