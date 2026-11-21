@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#0a1b29">
   <meta name="robots" content="noindex,nofollow">
-  <meta name="atlas-version" content="4.0-real-portraits">
+  <meta name="atlas-version" content="8.0-wikipedia-facts">
   <meta name="description" content="Interaktívny Atlas dejín: 78 historických osobností, videopríbehy, historické karty a štyri učebné hry.">
   <title>Atlas dejín | Objavuj · Hraj · Spoznávaj</title>
   <style>
@@ -80,6 +80,24 @@
 /* Version 5: make image loading status explicit while retaining offline illustrations */
 .card-medallion[data-open]{background:linear-gradient(145deg,#ebcc90,#aa754a)}
 .portrait-frame[data-photo-status="fallback"]::after{content:"ILUSTRAČNÁ KRESBA";position:absolute;bottom:9px;left:7%;right:7%;font-size:6px;font-weight:900;letter-spacing:1px;color:#fff3d4;text-align:center;z-index:2;text-shadow:0 2px 4px #061622;pointer-events:none}
+
+/* V8: article-backed, typewriter-animated biographical fact */
+.wiki-fact{margin:17px 0 22px;padding:19px 20px 17px;border:1px solid rgba(237,204,143,.32);border-radius:16px;background:radial-gradient(ellipse at 100% 0%,rgba(163,102,81,.13),transparent 46%),linear-gradient(130deg,rgba(17,43,57,.95),rgba(41,31,42,.88));box-shadow:inset 0 0 0 1px rgba(255,230,173,.035)}
+.wiki-fact-top{display:flex;align-items:center;gap:10px;justify-content:space-between;margin-bottom:12px}
+.wiki-fact-top strong{font-size:10px;letter-spacing:1.5px;color:#f5cf88;font-weight:900}
+.wiki-fact-source-tag{font-size:10px;color:#d9c6a3;border:1px solid rgba(230,201,152,.25);background:rgba(255,255,255,.04);padding:5px 9px;border-radius:20px;white-space:nowrap}
+.wiki-fact-body{font-family:Georgia,'Times New Roman',serif;font-size:15px;line-height:1.75;color:#f6efdf;min-height:68px;overflow-wrap:break-word}
+.wiki-fact-caret{display:inline-block;width:2px;height:1em;margin-left:4px;background:#eacb8d;vertical-align:-2px;animation:wikiCursor 0.7s steps(1) infinite}
+.wiki-fact.is-finished .wiki-fact-caret{display:none}
+@keyframes wikiCursor{50%{opacity:0}}
+.wiki-fact-bottom{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-top:14px}
+.wiki-fact-bottom a{color:#eed09e;text-underline-offset:3px;text-decoration:underline;font-size:11px;font-weight:750}
+.wiki-fact-skip{font-size:11px;color:#ead0a4;border:1px solid rgba(232,198,148,.3);background:rgba(255,255,255,.05);border-radius:8px;padding:7px 10px}
+.wiki-fact-skip[hidden]{display:none}
+.wiki-fact-footnote{font-size:10px;color:#9eaeb8;margin-top:9px;line-height:1.4}
+@media(max-width:740px){.wiki-fact{padding:16px 14px}.wiki-fact-body{font-size:14px;min-height:82px}.wiki-fact-top strong{font-size:9px;letter-spacing:1.2px}}
+@media(prefers-reduced-motion:reduce){.wiki-fact-caret{animation:none}}
+
 </style>
 
 
@@ -108,7 +126,7 @@
     <section id="gamesView" class="view" aria-labelledby="gamesTitle"><div class="shell inner-page"><div class="page-hero games-hero"><div class="section-kicker">HERNÁ SIEŇ</div><h1 id="gamesTitle">Učenie, ktoré je <em>hra.</em></h1><p>Štyri odlišné výzvy. Vyber si hru, zbieraj body a odomykaj svoje historické odznaky.</p><div class="game-highscore">✦ <span id="gamesTotalScore">0</span> tvojich bodov</div></div><div class="game-selector" id="gameSelector"><button class="game-tile" data-start-game="identity"><span class="game-tile-icon">♛</span><small>01 · KVÍZ</small><h3>Kto som?</h3><p>Uhádni osobnosť podľa jej historického titulu.</p><b>Spustiť hru <span>↗</span></b></button><button class="game-tile" data-start-game="truefalse"><span class="game-tile-icon">◈</span><small>02 · ROZHODOVANIE</small><h3>Pravda či výmysel?</h3><p>Patrí titul naozaj uvedenej osobnosti?</p><b>Spustiť hru <span>↗</span></b></button><button class="game-tile" data-start-game="memory"><span class="game-tile-icon">▦</span><small>03 · PAMÄŤ</small><h3>Kráľovské pexeso</h3><p>Hľadaj dvojice mien a správnych titulov.</p><b>Spustiť hru <span>↗</span></b></button><button class="game-tile" data-start-game="speed"><span class="game-tile-icon">⚡</span><small>04 · RÝCHLOSŤ</small><h3>Časová výzva</h3><p>Roztrieď osobnosti, kým vyprší čas.</p><b>Spustiť hru <span>↗</span></b></button></div><div class="game-stage" id="gameStage" hidden><div class="stage-toolbar"><button class="back-btn" id="backToGames">← Všetky hry</button><span class="stage-score" id="livePoints">✦ 0 bodov</span></div><div id="gameContent" aria-live="polite"></div></div><section class="award-section" aria-labelledby="badgesTitle"><div class="section-kicker">ODMENY ZA OBJAVOVANIE</div><h2 id="badgesTitle">Tvoje odznaky</h2><p>Postupne si ich odomkneš pri objavovaní videí a hraní hier.</p><div class="badge-grid" id="badgesGrid"></div></section></div></section>
     <section id="collectionView" class="view" aria-labelledby="collectionTitle"><div class="shell inner-page"><div class="page-hero collection-hero"><div class="section-kicker">MOJA ZBIERKA</div><h1 id="collectionTitle">Tvoja cesta <em>dejinami.</em></h1><p>Ukladaj si obľúbené osobnosti a sleduj, ktoré príbehy si už objavil.</p><div class="collection-progress"><span id="progressLabel">0 z 78 príbehov</span><div class="progress-line"><div id="progressBar" style="width:0%"></div></div></div></div><div class="collection-tabs" role="group" aria-label="Typ zbierky"><button class="tab active" data-collection="saved">♡ Obľúbené <span id="savedTabCount">0</span></button><button class="tab" data-collection="watched">✓ Pozreté <span id="watchedTabCount">0</span></button></div><div class="card-grid" id="collectionGrid"></div><div class="empty-state" id="collectionEmpty" hidden><span>♧</span><h3>Tu sa tvoja zbierka začne.</h3><p>Otvor niektorú historickú kartu a ulož si ju medzi obľúbené alebo označ video ako pozreté.</p><button class="btn btn-gold" data-nav="explore">Objaviť osobnosti ↗</button></div><div class="collection-note">Tvoj postup sa ukladá iba v tomto prehliadači a na tomto zariadení. Nevyžaduje sa účet.</div></div></section>
   </main>
-  <footer class="footer"><div class="shell footer-inner"><span class="footer-brand">♛ &nbsp; ATLAS <b>DEJÍN</b> <span class="version-pill">VERZIA 7 · ORIGINÁLNE VIDEÁ</span></span><span>Interaktívna vzdelávacia knižnica · ZŠ Strážnická</span><span>Video odkazy: <a href="https://worldsmonarchs.com/" rel="noopener noreferrer" target="_blank">World’s Monarchs ↗</a></span></div></footer>
+  <footer class="footer"><div class="shell footer-inner"><span class="footer-brand">♛ &nbsp; ATLAS <b>DEJÍN</b> <span class="version-pill">VERZIA 8 · WIKIPÉDIA A ZAUJÍMAVOSTI</span></span><span>Interaktívna vzdelávacia knižnica · ZŠ Strážnická</span><span>Video odkazy: <a href="https://worldsmonarchs.com/" rel="noopener noreferrer" target="_blank">World’s Monarchs ↗</a></span></div></footer>
 </div>
 <div class="modal-backdrop" id="personOverlay" hidden><div class="person-dialog" role="dialog" aria-modal="true" aria-labelledby="personDialogTitle"><button class="modal-close" id="closePerson" aria-label="Zavrieť okno">×</button><div class="dialog-left" id="dialogLeft"></div><div class="dialog-right" id="dialogRight"></div></div></div>
 <div class="toast-holder" id="toastHolder" role="status" aria-live="polite"></div>
@@ -429,8 +447,7 @@ window.ATLAS_PEOPLE = [
     "title": "Uhorská a chorvátska kráľovná",
     "url": "https://worldsmonarchs.com/cs/panovnici/evropa/maria-d4f6g8h2/",
     "category": "kings"
-  },
-  {
+  },  {
     "id": 46,
     "name": "Matej II.",
     "title": "Rímsky cisár, uhorský a český kráľ",
@@ -879,8 +896,7 @@ function fetchWikiPortrait(person){
         const body=await resp.json();
         const src=body?.thumbnail?.source || body?.originalimage?.source;
         const original=body?.originalimage?.source||src;
-        const filename=original?decodeURIComponent(new URL(original).pathname.split('/').pop()||''):'';
-        const photo=toPhoto(src,body?.title,filename);
+        const filename=original?decodeURIComponent(new URL(original).pathname.split('/').pop()||''):'';        const photo=toPhoto(src,body?.title,filename);
         if(photo)return photo;
       }
     }catch(e){}
@@ -937,6 +953,102 @@ async function imageCredits(person){
   }catch(e){}
 }
 
+
+// The article mapping above disambiguates historical rulers sharing the same name.
+// Get a Slovak-language excerpt for the mapped Wikipedia article when possible.
+// If unavailable, use the English original, explicitly labelled as such.
+const wikiFactCache=new Map();
+let wikiTypeTimer=null,wikiTypeToken=0,wikiFullText='';
+const wikiWikiUrl=(lang,title)=>'https://'+lang+'.wikipedia.org/wiki/'+encodeURIComponent(String(title).replace(/ /g,'_'));
+function wikiSentenceExcerpt(extract){
+ const cleaned=String(extract||'').replace(/\s+/g,' ').trim();
+ if(!cleaned)return '';
+ // Don't invent facts. Quote a short excerpt from the actual article introduction.
+ const segs=cleaned.split(/(?<=[.!?])\s+(?=[A-ZÁÄČĎÉÍĹĽŇÓÔŔŠŤÚÝŽ])/u).filter(Boolean);
+ // When a second sentence includes a notable event, prefer that to the generic job title.
+ const notable=/(založil|založila|vybudoval|vybudovala|porazil|porazila|reform|korunov|zjednotil|zjednotila|preslávil|preslávila|významn|bojoval|bojovala|vládol|vládla|v roku|počas vlády|najznámej|storoč|kráľovstv|vojna|povstani|škol|univerzit|kultúr|vojensk)/i;
+ let result=(segs.length>=2&&segs[1].length>=36&&notable.test(segs[1]))?segs[1]:segs[0];
+ if(result.length<95&&segs.length>1&&result===segs[0]&&(result+' '+segs[1]).length<=310)result+=' '+segs[1];
+ if(result.length>320){
+  const cut=result.slice(0,320);const k=cut.lastIndexOf(' ');
+  result=(k>130?cut.slice(0,k):cut).trim().replace(/[,;:\s]+$/,'')+'…';
+ }
+ return result;
+}
+async function fetchWikipediaFact(person){
+ if(wikiFactCache.has(person.id))return wikiFactCache.get(person.id);
+ const title=WIKI_ARTICLES[person.id]||person.name;
+ const fallback={text:'',language:'en',label:'anglická Wikipédia',source:wikiWikiUrl('en',title)};
+ const fetchSummary=async (lang,articleTitle)=>{
+  const url='https://'+lang+'.wikipedia.org/api/rest_v1/page/summary/'+encodeURIComponent(articleTitle.replace(/ /g,'_'));
+  try{
+   const resp=await fetch(url,{mode:'cors',cache:'force-cache'});
+   if(!resp.ok)return null;
+   const body=await resp.json();
+   if(body.type==='disambiguation')return null;
+   const text=wikiSentenceExcerpt(body.extract);
+   if(!text||text.length<32)return null;
+   return {text,language:lang,label:lang==='sk'?'slovenská Wikipédia':'anglická Wikipédia',source:body?.content_urls?.desktop?.page||wikiWikiUrl(lang,body.title||articleTitle)};
+  }catch(e){return null;}
+ };
+ const task=(async()=>{
+  try{
+   const params=new URLSearchParams({action:'query',format:'json',formatversion:'2',redirects:'1',origin:'*',prop:'langlinks',lllang:'sk',titles:title});
+   const response=await fetch('https://en.wikipedia.org/w/api.php?'+params.toString(),{mode:'cors',cache:'force-cache'});
+   if(response.ok){
+    const page=(await response.json())?.query?.pages?.[0];
+    if(page&&!page.missing){
+     const target=page?.langlinks?.find(link=>link.lang==='sk')?.title;
+     if(target){const sk=await fetchSummary('sk',target);if(sk)return sk;}
+    }
+   }
+  }catch(e){}
+  return await fetchSummary('en',title)||fallback;
+ })();
+ wikiFactCache.set(person.id,task);
+ return task;
+}
+function stopWikiTyping(){
+ wikiTypeToken++;
+ if(wikiTypeTimer!==null){clearInterval(wikiTypeTimer);wikiTypeTimer=null;}
+ wikiFullText='';
+}
+function finishWikiTyping(){
+ if(wikiTypeTimer!==null){clearInterval(wikiTypeTimer);wikiTypeTimer=null;}
+ const target=$('wikiFactText');if(target&&wikiFullText){target.textContent=wikiFullText;}
+ const root=$('wikiFact');if(root)root.classList.add('is-finished');
+ const skip=$('wikiFactSkip');if(skip)skip.hidden=true;
+}
+function animateWikiText(text){
+ const target=$('wikiFactText');if(!target)return;
+ if(wikiTypeTimer!==null){clearInterval(wikiTypeTimer);wikiTypeTimer=null;}
+ wikiFullText=text;
+ const root=$('wikiFact');if(root)root.classList.remove('is-finished');
+ const skip=$('wikiFactSkip');if(skip)skip.hidden=false;
+ if(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches){finishWikiTyping();return;}
+ let i=0;target.textContent='';
+ const token=++wikiTypeToken;
+ wikiTypeTimer=setInterval(()=>{
+  if(token!==wikiTypeToken||!target.isConnected){clearInterval(wikiTypeTimer);wikiTypeTimer=null;return;}
+  i=Math.min(text.length,i+3);
+  target.textContent=text.slice(0,i);
+  if(i>=text.length)finishWikiTyping();
+ },27);
+}
+async function showWikiFact(person){
+ const label=$('wikiFactTag');const source=$('wikiFactSource');const target=$('wikiFactText');
+ if(!target||!source)return;
+ const token=wikiTypeToken;
+ const fact=await fetchWikipediaFact(person);
+ if(currentModal!==person.id||token!==wikiTypeToken||!target.isConnected)return;
+ source.href=fact.source;
+ source.textContent='Zdroj: '+(fact.language==='sk'?'slovenská':'anglická')+' Wikipédia ↗';
+ if(label)label.textContent=fact.language==='sk'?'SK Wikipédia':'EN Wikipédia';
+ if(fact.text){animateWikiText(fact.text);}
+ else {target.textContent='Krátku informáciu sa teraz nepodarilo načítať. Článok si môžeš otvoriť cez zdroj nižšie.';
+  $('wikiFact')?.classList.add('is-finished');}
+}
+
 function card(p){
  return `<article class="person-card cat-${p.category}"><div class="card-art"><div class="card-medallion" data-open="${p.id}" role="button" tabindex="0" aria-label="Otvoriť kartu ${esc(p.name)}"><div class="portrait-frame" data-person-id="${p.id}">${portraitSVG(p,'card')}</div><span class="art-ribbon">${esc(CATNAMES[p.category])}</span>${watched.has(p.id)?'<span class="watched-dot" title="Pozreté">✓</span>':''}</div></div><button class="heart-btn ${favorites.has(p.id)?'saved':''}" data-favorite="${p.id}" aria-label="${favorites.has(p.id)?'Odobrať z obľúbených':'Uložiť do obľúbených'}: ${esc(p.name)}">${favorites.has(p.id)?'♥':'♡'}</button><div class="card-info"><span class="card-number">KARTA / ${String(p.id).padStart(3,'0')}</span><h3 class="person-name">${esc(p.name)}</h3><p class="person-title">${esc(p.title)}</p><div class="card-bottom"><span>${watched.has(p.id)?'✓ Pozreté':'◷ Neobjavené'}</span><button data-open="${p.id}">Otvoriť kartu ↗</button></div></div></article>`;
 }
@@ -964,15 +1076,16 @@ function toggleWatched(id){
 }
 function openPerson(id,focus=true){
  const p=PEOPLE.find(x=>x.id===id);if(!p)return;
+ stopWikiTyping();
  if(focus)lastFocus=document.activeElement;
  currentModal=id;const pos=PEOPLE.findIndex(x=>x.id===id);const prev=PEOPLE[(pos+PEOPLE.length-1)%PEOPLE.length];const next=PEOPLE[(pos+1)%PEOPLE.length];
  $('dialogLeft').innerHTML=`<div class="dialog-ornament"><div class="dialog-portrait-wrap"><div class="dialog-badge">${esc(CATNAMES[p.category])}</div><div class="dialog-medallion"><div class="portrait-frame" data-person-id="${p.id}">${portraitSVG(p,'dialog')}</div></div><div class="dialog-quote">${esc(p.name)}</div><div class="dialog-meta-mini">HISTORICKÁ KARTA #${String(p.id).padStart(3,'0')}</div></div></div>`;
- $('dialogRight').innerHTML=`<div class="dialog-kicker">${esc(CATNAMES[p.category])} &nbsp; · &nbsp; KARTA ${String(p.id).padStart(3,'0')}</div><h2 id="personDialogTitle">${esc(p.name)}</h2><p>${esc(p.title)}</p><div class="photo-attribution" id="portraitCredit">Vyhľadávam historické vyobrazenie...</div><div class="dialog-actions"><a class="btn btn-gold" href="${esc(safeURL(p.url))}" target="_blank" rel="noopener noreferrer" aria-label="Otvoriť originálne video ${esc(p.name)} v novej karte">▶ &nbsp; Prehrať originálne video ↗</a><button class="btn btn-outline" data-watched="${p.id}">${watched.has(id)?'✓ Označené ako pozreté':'✓ Označiť video ako pozreté'}</button><button class="btn btn-quiet" data-favorite="${p.id}">${favorites.has(id)?'♥ Odobrať z mojej zbierky':'♡ Pridať do mojej zbierky'}</button></div><div class="dialog-nav"><button data-open="${prev.id}">← Predchádzajúca</button><button data-open="${next.id}">Nasledujúca →</button></div>`;
+ $('dialogRight').innerHTML=`<div class="dialog-kicker">${esc(CATNAMES[p.category])} &nbsp; · &nbsp; KARTA ${String(p.id).padStart(3,'0')}</div><h2 id="personDialogTitle">${esc(p.name)}</h2><p>${esc(p.title)}</p><section class="wiki-fact is-finished" id="wikiFact" aria-label="Zaujímavosť z Wikipédie"><div class="wiki-fact-top"><strong>✦ VIEŠ, ŽE…?</strong><span class="wiki-fact-source-tag" id="wikiFactTag">Wikipédia</span></div><div class="wiki-fact-body"><span id="wikiFactText">Hľadám zaujímavosť na Wikipédii…</span><span class="wiki-fact-caret" aria-hidden="true"></span></div><div class="wiki-fact-bottom"><a id="wikiFactSource" href="${esc(wikiWikiUrl('en',WIKI_ARTICLES[p.id]||p.name))}" target="_blank" rel="noopener noreferrer">Zdroj: Wikipédia ↗</a><button class="wiki-fact-skip" id="wikiFactSkip" data-complete-fact="true" hidden>Zobraziť celý text</button></div><div class="wiki-fact-footnote">Krátky výňatok z úvodu článku na Wikipédii. <a href="https://creativecommons.org/licenses/by-sa/4.0/deed.sk" target="_blank" rel="noopener noreferrer">CC BY-SA</a></div></section><div class="photo-attribution" id="portraitCredit">Vyhľadávam historické vyobrazenie...</div><div class="dialog-actions"><a class="btn btn-gold" href="${esc(safeURL(p.url))}" target="_blank" rel="noopener noreferrer" aria-label="Otvoriť originálne video ${esc(p.name)} v novej karte">▶ &nbsp; Prehrať originálne video ↗</a><button class="btn btn-outline" data-watched="${p.id}">${watched.has(id)?'✓ Označené ako pozreté':'✓ Označiť video ako pozreté'}</button><button class="btn btn-quiet" data-favorite="${p.id}">${favorites.has(id)?'♥ Odobrať z mojej zbierky':'♡ Pridať do mojej zbierky'}</button></div><div class="dialog-nav"><button data-open="${prev.id}">← Predchádzajúca</button><button data-open="${next.id}">Nasledujúca →</button></div>`;
  $('personOverlay').hidden=false;document.body.style.overflow='hidden';
- enrichPortraits($('dialogLeft'));imageCredits(p);
+ enrichPortraits($('dialogLeft'));imageCredits(p);showWikiFact(p);
  if(focus)$('closePerson').focus();
 }
-function closePerson(){if(currentModal===null)return;currentModal=null;$('personOverlay').hidden=true;document.body.style.overflow='';if(lastFocus&&document.contains(lastFocus))lastFocus.focus();}
+function closePerson(){if(currentModal===null)return;stopWikiTyping();currentModal=null;$('personOverlay').hidden=true;document.body.style.overflow='';if(lastFocus&&document.contains(lastFocus))lastFocus.focus();}
 function revealGames(){ $('gameSelector').hidden=false;$('gameStage').hidden=true;stopTimer();game=null; }
 function startGame(type){
  stopTimer();if(!['identity','truefalse','memory','speed'].includes(type))return;
@@ -997,7 +1110,8 @@ function drawGame(){
  if(game.type==='identity'){
   if(game.question>=game.questions.length){completeGame();return;}
   let q=game.questions[game.question];target.innerHTML=`${progressBar(game.question,game.questions.length)}<h2 class="quiz-question">Kto som?</h2><p class="quiz-subtitle">Ktorá historická osobnosť je v zozname uvedená s týmto titulom?</p><div class="quote-box">${esc(q.person.title)}</div>${answerChoices(q.options.map(p=>({id:p.id,label:p.name})))}<p class="quiz-feedback" id="quizFeedback"></p><div class="quiz-footer"><button class="btn btn-quiet" id="hintBtn">✧ Nápoveda (−5 bodov)</button><button class="btn btn-gold" id="nextQuestion" disabled>${game.question===game.questions.length-1?'Zobraziť výsledok':'Ďalšia otázka →'}</button></div><p class="hint-text" id="hintText"></p>`;
- }else if(game.type==='truefalse'){  if(game.question>=game.questions.length){completeGame();return;}
+ }else if(game.type==='truefalse'){
+  if(game.question>=game.questions.length){completeGame();return;}
   let q=game.questions[game.question];target.innerHTML=`${progressBar(game.question,game.questions.length)}<h2 class="quiz-question">Pravda či výmysel?</h2><p class="quiz-subtitle">Rozhodni, či táto dvojica súhlasí s priloženým zoznamom osobností.</p><div class="quote-box"><strong>${esc(q.person.name)}</strong><br> ${esc(q.title)}</div><div class="tf-controls"><button class="answer-button" data-tf="true">✓ &nbsp; Pravda</button><button class="answer-button" data-tf="false">× &nbsp; Výmysel</button></div><p class="quiz-feedback" id="quizFeedback"></p><div class="quiz-footer"><small>Za každú správnu odpoveď získaš 10 bodov.</small><button class="btn btn-gold" id="nextQuestion" disabled>${game.question===game.questions.length-1?'Zobraziť výsledok':'Ďalšia otázka →'}</button></div>`;
  }else if(game.type==='memory'){
   const matched=game.matched.length;target.innerHTML=`<div class="memory-stats"><span>✧ Spojené dvojice: <b>${matched}/6</b></span><span>Ťahy: <b>${game.moves}</b></span></div><h2 class="quiz-question">Kráľovské pexeso</h2><p class="quiz-subtitle">Odkry meno a k nemu patriaci historický titul. Vybrané dvojice majú jedinečné tituly.</p><div class="memory-grid">${game.cards.map((c,i)=>{const flipped=game.flipped.includes(i),match=game.matched.includes(c.id);return `<button class="memory-card ${flipped?'flipped':''} ${match?'matched':''}" data-flip="${i}" ${match?'disabled':''} aria-label="${flipped||match?esc(c.text):'Otočiť kartu číslo '+(i+1)}"><div class="memory-card-inner"><div class="memory-face back">♛</div><div class="memory-face front"><small>${c.type==='name'?'Osobnosť':'Titul'}</small>${esc(c.text)}</div></div></button>`;}).join('')}</div><p class="quiz-feedback" id="quizFeedback">Dvojice hľadaj pozorne. Každá nájdená dvojica je za 15 bodov.</p><div class="quiz-footer"><small>Počet ťahov: ${game.moves}</small><button class="btn btn-outline" data-restart="memory">Premiešať karty ↻</button></div>`;
@@ -1038,9 +1152,10 @@ function completeGame(){
 function freshRandom(){const p=PEOPLE[Math.floor(Math.random()*PEOPLE.length)];if(p)openPerson(p.id);}
 function bindEvents(){
  document.addEventListener('click',e=>{
-  const x=e.target.closest('[data-nav],[data-filter],[data-open],[data-favorite],[data-watched],[data-clear],[data-start-game],[data-answer],[data-tf],[data-flip],[data-restart],[data-show-games],[data-collection]');if(!x)return;
+  const x=e.target.closest('[data-nav],[data-filter],[data-open],[data-favorite],[data-watched],[data-clear],[data-start-game],[data-answer],[data-tf],[data-flip],[data-restart],[data-show-games],[data-collection],[data-complete-fact]');if(!x)return;
   const d=x.dataset;
-  if(d.nav)nav(d.nav);
+  if(d.completeFact!==undefined)finishWikiTyping();
+  else if(d.nav)nav(d.nav);
   else if(d.filter){filter=d.filter;limit=12;renderLibrary();}
   else if(d.open)openPerson(Number(d.open),currentModal===null);
   else if(d.favorite)toggleFavorite(Number(d.favorite));
