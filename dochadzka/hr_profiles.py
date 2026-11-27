@@ -6,7 +6,7 @@ as admin/hr, reads as admin/hr/manager. No real employee data shipped in seeds.
 from datetime import date
 from typing import Optional
 from fastapi import Depends, HTTPException
-from pydantic import BaseModel, Field, EmailStr
+from pydantic import BaseModel, Field
 from sqlalchemy import Boolean, Date, ForeignKey, Integer, String, Float, select
 from sqlalchemy.orm import Mapped, mapped_column, Session
 
@@ -34,8 +34,8 @@ class ProfileInput(BaseModel):
 
 class TemplateInput(BaseModel):
     name: str = Field(min_length=2,max_length=100)
-    start: str = Field(pattern=r"^([01]\\d|2[0-3]):[0-5]\\d$")
-    end: str = Field(pattern=r"^([01]\\d|2[0-3]):[0-5]\\d$")
+    start: str = Field(pattern=r"^([01][0-9]|2[0-3]):[0-5][0-9]$")
+    end: str = Field(pattern=r"^([01][0-9]|2[0-3]):[0-5][0-9]$")
     break_minutes: int = Field(default=30,ge=0,le=240)
     work_days: int = Field(default=5,ge=1,le=7)
     description: str = Field(default="",max_length=250)
