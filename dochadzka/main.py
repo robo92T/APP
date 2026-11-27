@@ -59,7 +59,7 @@ def db():
     with SessionLocal() as session: yield session
 def admin(request: Request, session: Session = Depends(db)):
     user = _current_account(request, session)
-    if user.role not in ('admin','hr','manager','auditor'):
+    if user.role not in ('admin','hr'):
         raise HTTPException(403, 'Nedostatočné oprávnenie')
     return user
 def terminal(x_terminal_key: Optional[str] = Header(None)):
@@ -205,13 +205,25 @@ def add_absence(data: AbsenceCreate, db: Session = Depends(db)):
     if data.kind not in KINDS: raise HTTPException(400,"Neznámy druh neprítomnosti")
     if data.end < data.start: raise HTTPException(400,"Koniec pred začiatkom")
     if not db.get(Employee,data.employee_id): raise HTTPException(404,"Zamestnanec neexistuje")
-    a=Absence(**data.model_dump());db.add(a);db.flush();audit(db,"admin","absence.create",str(a.id));db.commit()
+    a=Absence(**data.model_dump());
+    if a.kind in ("sick","ocr"): a.status="approved"
+    db.add(a);db.flush();audit(db,"admin","absence.create",str(a.id));db.commit()
     return {"id":a.id,"status":a.status}
 @app.post("/api/absences/{absence_id}/approve", dependencies=[Depends(admin)])
 def approve(absence_id:int, db:Session=Depends(db)):
     a=db.get(Absence,absence_id)
     if not a: raise HTTPException(404,"Neprítomnosť neexistuje")
+    if a.status != "pending":raise HTTPException(409,"Žiadosť už nie je v stave čaká")
     a.status="approved";audit(db,"admin","absence.approve",str(a.id));db.commit()
+    return {"status":a.status}
+@app.post("/api/absences/{absence_id}/reject", dependencies=[Depends(admin)])
+def reject_absence(absence_id:int,db:Session=Depends(db)):
+    a=db.get(Absence,absence_id)
+    if not a:raise HTTPException(404,"Neprítomnosť neexistuje")
+    if a.status!="pending":raise HTTPException(409,"Žiadosť už nie je v stave čaká")
+    a.status="rejected"
+    audit(db,"admin","absence.reject",str(a.id))
+    db.commit()
     return {"status":a.status}
 @app.get("/api/absences", dependencies=[Depends(admin)])
 def absences(employee_id:Optional[int]=None,year:Optional[int]=None,db:Session=Depends(db)):
