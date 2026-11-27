@@ -20,6 +20,9 @@ class DeviceCreate(BaseModel):
     location:str=Field(default="",max_length=160)
     allowed_ip:Optional[str]=Field(default=None,max_length=64)
 
+class IdentifyRequest(BaseModel):
+    uid:str=Field(min_length=3,max_length=128)
+
 class KioskScan(BaseModel):
     uid:str=Field(min_length=3,max_length=128)
     event_id:str=Field(min_length=16,max_length=80)
@@ -97,8 +100,8 @@ def install(app,Base,Employee,Event,engine,db,require_role,audit,is_closed_range
         return {"device_id":dev.id,"name":dev.name,"server_utc":datetime.now(timezone.utc).isoformat()}
 
     @app.post("/api/devices/identify")
-    def identify(uid:str,dev=Depends(authenticate),session:Session=Depends(db)):
-        employee=session.scalar(select(Employee).where(Employee.card_uid==uid,Employee.active==True))
+    def identify(payload:IdentifyRequest,dev=Depends(authenticate),session:Session=Depends(db)):
+        employee=session.scalar(select(Employee).where(Employee.card_uid==payload.uid,Employee.active==True))
         if not employee:raise HTTPException(404,"Neznáma karta")
         last=session.scalar(select(Event).where(Event.employee_id==employee.id)
                 .order_by(Event.at.desc(),Event.id.desc()).limit(1))
