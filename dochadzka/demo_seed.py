@@ -72,11 +72,12 @@ def seed_preview(Base,engine,Employee,Event,Absence,Shift,audit):
                     start_t=time(7,30) if i%3 else time(8,0)
                     end_t=time(15,30) if i%3 else time(16,0)
                     plan=450 if e.weekly_minutes>=2250 else 240
-                if i==0 and d in (date(2026,11,12),date(2026,11,13)):continue
-                if i==1 and d==date(2026,11,19):continue
                 session.add(Shift(employee_id=e.id,day=d,planned_minutes=plan,
                     start_time=start_t.strftime("%H:%M"),end_time=end_t.strftime("%H:%M"),
                     note="DEMO · automaticky vytvorená plánovaná zmena"))
+                # Leave days retain their scheduled time, but no punch is simulated.
+                if i==0 and d in (date(2026,11,12),date(2026,11,13)):continue
+                if i==1 and d==date(2026,11,19):continue
                 if i in (5,6,7):
                     actual_start=datetime.combine(d,start_t,TZ)
                     actual_end=datetime.combine(d+(timedelta(days=1) if slot==1 else timedelta(0)),end_t,TZ)
