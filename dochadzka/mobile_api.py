@@ -13,7 +13,7 @@ class SelfAbsence(BaseModel):
     minutes: int | None = Field(default=None,ge=1,le=1440)
     note: str = Field(default="",max_length=400)
 
-ALLOWED={"vacation","doctor","accompany","doctor_unpaid","accompany_unpaid","unpaid","paid_leave","ocr","other"}
+ALLOWED={"vacation","doctor","accompany","doctor_unpaid","accompany_unpaid","unpaid","paid_leave","ocr","sick","other"}
 def install(app,Employee,Event,Absence,db,current_account,audit):
     def mine(account=Depends(current_account),session:Session=Depends(db)):
         if account.employee_id is None:raise HTTPException(403,"Účet nie je priradený zamestnancovi")
@@ -54,7 +54,7 @@ def install(app,Employee,Event,Absence,db,current_account,audit):
         if data.kind not in ALLOWED:raise HTTPException(422,"Neplatný druh žiadosti")
         if data.end<data.start or (data.end-data.start).days>366:raise HTTPException(422,"Neplatné obdobie")
         # No client-controlled employee ID: derive identity from verified token.
-        item=Absence(employee_id=employee.id,kind=data.kind,start=data.start,end=data.end,minutes=data.minutes,status="pending",note=data.note)
+        item=Absence(employee_id=employee.id,kind=data.kind,start=data.start,end=data.end,minutes=data.minutes,status=("approved" if data.kind in {"ocr","sick"} else "pending"),note=data.note)
         session.add(item);session.flush()
         audit(session,account.username,"self.absence.create",str(item.id));session.commit()
-        return {"id":item.id,"status":"pending"}
+        return {"id":item.id,"status":item.status}
