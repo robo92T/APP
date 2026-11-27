@@ -5,7 +5,7 @@ const monthStart=()=>localDate(new Date(new Date().getFullYear(),new Date().getM
 function toast(msg,bad=false){const e=$('#toast');e.textContent=msg;e.style.background=bad?'#a4334d':'#173351';e.classList.add('show');setTimeout(()=>e.classList.remove('show'),3700)}
 async function api(url,opts={}){const r=await fetch(url,{...opts,headers:{'Content-Type':'application/json',...(token?{Authorization:'Bearer '+token}:{}),...(opts.headers||{})}});let d;try{d=await r.json()}catch{d={detail:'Neznáma odpoveď servera'}}if(!r.ok){if(r.status===401&&url!='/api/auth/login'){logout();throw Error('Relácia vypršala. Prihláste sa.')};throw Error(typeof d.detail==='string'?d.detail:'Server vrátil chybu '+r.status)}return d}
 function logout(){token='';currentUser=null;sessionStorage.removeItem('attendance_token');$('#app').classList.add('hidden');$('#login').classList.remove('hidden')}
-async function init(){if(!token){logout();return}try{currentUser=await api('/api/auth/me');$('#userBadge').textContent=currentUser.username.toUpperCase();$('#login').classList.add('hidden');$('#app').classList.remove('hidden');$('#today').textContent=new Intl.DateTimeFormat('sk-SK',{dateStyle:'long'}).format(new Date());if(currentUser.must_change_password){document.querySelectorAll('.nav').forEach(n=>n.classList.toggle('hidden',n.dataset.view!=='accounts'));view='accounts';navigate('accounts');return}if(['employee','manager','auditor'].includes(currentUser.role)){employees=[];document.querySelectorAll('.nav').forEach(n=>{n.classList.toggle('hidden',!['dashboard','requests','accounts'].includes(n.dataset.view))});view='dashboard';}else{document.querySelectorAll('.nav').forEach(n=>n.classList.remove('hidden'));await refreshEmployees();}navigate(view);updateStorageWarning()}catch(e){logout();toast(e.message,true)}}
+async function init(){if(!token){logout();return}try{currentUser=await api('/api/auth/me');$('#userBadge').textContent=currentUser.username.toUpperCase();$('#login').classList.add('hidden');$('#app').classList.remove('hidden');$('#today').textContent=new Intl.DateTimeFormat('sk-SK',{dateStyle:'long'}).format(new Date());if(currentUser.must_change_password){document.querySelectorAll('.nav').forEach(n=>n.classList.toggle('hidden',n.dataset.view!=='accounts'));view='accounts';navigate('accounts');return}if(['employee','manager','auditor'].includes(currentUser.role)){employees=[];document.querySelectorAll('.nav').forEach(n=>{n.classList.toggle('hidden',!['dashboard','requests','accounts'].includes(n.dataset.view))});view='dashboard';}else{document.querySelectorAll('.nav').forEach(n=>n.classList.remove('hidden'));await refreshEmployees();}navigate(view);updateStorageWarning();refreshLegalNoticeBanner()}catch(e){logout();toast(e.message,true)}}
 async function refreshEmployees(){try{employees=await api('/api/employees')}catch(e){employees=[];toast(e.message,true)}}
 const choose=(id='empSelect')=>'<select id="'+id+'">'+employees.map(e=>'<option value="'+e.id+'">'+esc(e.name)+'</option>').join('')+'</select>';
 function head(title){$('#pageTitle').textContent=title;$('#breadcrumb').textContent=title.toUpperCase();document.querySelectorAll('.nav').forEach(x=>x.classList.toggle('active',x.dataset.view===view))}
@@ -341,4 +341,18 @@ async function legalMonitorView(){
      try{await api('/api/legal-monitor/proposals/'+id+'/'+action,{method:'POST',body:JSON.stringify({justification})});toast('Rozhodnutie auditované');legalMonitorView()}catch(e){toast(e.message,true)}
    });
  }
+}
+
+
+async function refreshLegalNoticeBanner(){
+ const banner=$('#legalNoticeBanner');
+ if(!banner)return;
+ if(!['admin','hr'].includes(currentUser?.role)){banner.classList.add('hidden');return}
+ try{
+   const status=await api('/api/legal-monitor/status');
+   const count=status.new_notices||0;
+   banner.classList.toggle('hidden',count===0);
+   if(count)banner.innerHTML='<strong>Legislatívna kontrola: '+count+' nové upozornenia</strong><span>Pravidlá sa bez schválenia nemenia.</span><button id="reviewLegalAlerts" class="secondary mini">Zobraziť návrhy</button>';
+   if(count)$('#reviewLegalAlerts').onclick=()=>navigate('legalMonitor');
+ }catch{banner.classList.add('hidden')}
 }
