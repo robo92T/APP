@@ -41,6 +41,10 @@ def install(app, Base, Employee, engine, db, audit):
         role:Mapped[str]=mapped_column(String(30),default="employee")
         employee_id:Mapped[Optional[int]]=mapped_column(ForeignKey("employee.id"),nullable=True)
         active:Mapped[bool]=mapped_column(Boolean,default=True)
+    class PasswordPolicy(Base):
+        __tablename__="password_policy"
+        account_id:Mapped[int]=mapped_column(ForeignKey("account.id"),primary_key=True)
+        must_change:Mapped[bool]=mapped_column(Boolean,default=True)
     Base.metadata.create_all(engine)
     # First-run bootstrap, only when explicitly configured by deployer.
     bootstrap_user=os.getenv("BOOTSTRAP_ADMIN_USERNAME","").strip()
@@ -65,6 +69,9 @@ def install(app, Base, Employee, engine, db, audit):
             token=jwt.decode(bearer[7:],secret,algorithms=["HS256"],options={"require_exp":True,"require_sub":True})
             account=session.get(Account,int(token["sub"]))
             if not account or not account.active:raise HTTPException(401,"Neplatný účet")
+            policy=session.get(PasswordPolicy,account.id)
+            if policy and policy.must_change and request.url.path not in ("/api/auth/me","/api/auth/password"):
+                raise HTTPException(403,"Najprv zmeň dočasné heslo")
             return account
         except (JWTError,ValueError,KeyError):raise HTTPException(401,"Neplatné prihlásenie")
     def require_role(*roles):
@@ -81,14 +88,18 @@ def install(app, Base, Employee, engine, db, audit):
         issued=datetime.now(timezone.utc)
         signed=jwt.encode({"sub":str(account.id),"iat":issued,"exp":issued+timedelta(hours=8)},secret,algorithm="HS256")
         audit(session,account.username,"login","successful");session.commit()
-        return {"access_token":signed,"token_type":"bearer","role":account.role,"username":account.username,"employee_id":account.employee_id}
+        policy=session.get(PasswordPolicy,account.id)
+        return {"access_token":signed,"token_type":"bearer","role":account.role,"username":account.username,"employee_id":account.employee_id,"must_change_password":bool(policy and policy.must_change)}
     @app.get("/api/auth/me")
-    def me(account=Depends(current)):
-        return {"username":account.username,"role":account.role,"employee_id":account.employee_id}
+    def me(account=Depends(current),session:Session=Depends(db)):
+        policy=session.get(PasswordPolicy,account.id)
+        return {"username":account.username,"role":account.role,"employee_id":account.employee_id,"must_change_password":bool(policy and policy.must_change)}
     @app.post("/api/auth/password")
     def change_password(payload:PasswordChange,account=Depends(current),session:Session=Depends(db)):
         if not verify_password(payload.old_password,account.password_hash):raise HTTPException(401,"Nesprávne aktuálne heslo")
         account.password_hash=make_hash(payload.new_password)
+        policy=session.get(PasswordPolicy,account.id)
+        if policy:policy.must_change=False
         audit(session,account.username,"password.change","self");session.commit()
         return {"success":True}
     @app.post("/api/auth/accounts")
@@ -97,6 +108,24 @@ def install(app, Base, Employee, engine, db, audit):
         if session.scalar(select(Account).where(Account.username==payload.username)):raise HTTPException(409,"Používateľ existuje")
         if employee_id and not session.get(Employee,employee_id):raise HTTPException(404,"Zamestnanec neexistuje")
         user=Account(username=payload.username,password_hash=make_hash(payload.password),role=role,employee_id=employee_id)
-        session.add(user);audit(session,account.username,"account.create",payload.username);session.commit()
+        session.add(user);session.flush()
+        session.add(PasswordPolicy(account_id=user.id,must_change=True))
+        audit(session,account.username,"account.create",payload.username);session.commit()
         return {"success":True}
+    @app.post("/api/auth/employees/{employee_id}/reset-password")
+    def reset_employee_password(employee_id:int,operator=Depends(require_role("admin","hr")),session:Session=Depends(db)):
+        """Return a random one-time temporary password to authorized HR only."""
+        target=session.scalar(select(Account).where(Account.employee_id==employee_id))
+        if not target:raise HTTPException(404,"Zamestnanec nemá používateľský účet")
+        if target.role=="admin" and operator.role!="admin":raise HTTPException(403,"Admin heslo smie resetovať len admin")
+        temporary=secrets.token_urlsafe(18)
+        target.password_hash=make_hash(temporary)
+        policy=session.get(PasswordPolicy,target.id)
+        if not policy:
+            policy=PasswordPolicy(account_id=target.id,must_change=True)
+            session.add(policy)
+        else:policy.must_change=True
+        audit(session,operator.username,"password.reset",target.username)
+        session.commit()
+        return {"username":target.username,"temporary_password":temporary,"must_change_password":True}
     return Account,current,require_role
