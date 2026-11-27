@@ -46,7 +46,7 @@ def install(app, Base, Employee, engine, db, audit):
     bootstrap_user=os.getenv("BOOTSTRAP_ADMIN_USERNAME","").strip()
     bootstrap_password=os.getenv("BOOTSTRAP_ADMIN_PASSWORD","")
     if bootstrap_user and len(bootstrap_password)>=12:
-        with next(db()) as session:
+        with Session(engine) as session:
             if session.scalar(select(Account).limit(1)) is None:
                 session.add(Account(username=bootstrap_user,password_hash=make_hash(bootstrap_password),role="admin"))
                 session.commit()
