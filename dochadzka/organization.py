@@ -51,8 +51,8 @@ def direct_or_tree_report_ids(session:Session,manager_employee_id:int):
         select(_Membership).where(_Membership.unit_id.in_(allowed_units))
     ).all()} if allowed_units else set()
     if _Profile is not None:
-        reports.update(p.employee_id for p in session.scalars(
-            select(_Profile).where(_Profile.c.manager_id==manager_employee_id)
+        reports.update(row[0] for row in session.execute(
+            select(_Profile.c.employee_id).where(_Profile.c.manager_id==manager_employee_id)
         ).all())
     reports.discard(manager_employee_id)
     return reports
