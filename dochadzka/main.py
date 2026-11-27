@@ -369,6 +369,9 @@ install_secure_backup(app,Base,db,require_role,audit)
 from devices import install as install_devices
 install_devices(app,Base,Employee,Event,engine,db,require_role,audit,is_closed_range)
 
+from legal_entitlements import install as install_legal_entitlements
+install_legal_entitlements(app,Base,Employee,Absence,Shift,engine,db,require_role,audit)
+
 # Explicitly-gated fake preview dataset. No seed on any production/PostgreSQL DB.
 from demo_seed import seed_preview
 seed_preview(Base,engine,Employee,Event,Absence,Shift,audit)
