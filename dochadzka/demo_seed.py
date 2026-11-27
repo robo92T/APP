@@ -115,6 +115,30 @@ def seed_preview(Base,engine,Employee,Event,Absence,Shift,audit):
                     cost_center=center,active=True)).inserted_primary_key[0]
             for i,(_,_,dept,_,_,_,_) in enumerate(NAMES):
                 session.execute(insert(org_members).values(employee_id=created[i].id,unit_id=ids[dept]))
+        # Fictional travel orders demonstrate per-day domestic meal allowance.
+        trips_table=Base.metadata.tables.get("travel_order")
+        travel_meals=Base.metadata.tables.get("travel_meal")
+        if trips_table is not None and travel_meals is not None:
+            demo_trips=[
+                (created[3].id,"Ukážkové IT školenie","Trnava",
+                 datetime(2026,11,18,8,0,tzinfo=TZ),datetime(2026,11,18,17,0,tzinfo=TZ),
+                 "public",0,0,0,12.40,0,0,0),
+                (created[8].id,"Demonštračné rokovanie","Bratislava",
+                 datetime(2026,12,8,7,0,tzinfo=TZ),datetime(2026,12,8,20,0,tzinfo=TZ),
+                 "private_car",85,6,1.58,0,0,4.50,0)
+            ]
+            for ix,(eid,purpose,place,starts,ends,transport,km,liters,fuel_price,ticket,hotel,other,advance) in enumerate(demo_trips):
+                trip_id=session.execute(insert(trips_table).values(employee_id=eid,purpose=purpose,
+                    destination=place,starts_at=starts.astimezone(timezone.utc),ends_at=ends.astimezone(timezone.utc),
+                    transport=transport,private_car_km=km,fuel_l_per_100km=liters,
+                    fuel_price_eur_l=fuel_price,public_transport_eur=ticket,lodging_eur=hotel,
+                    other_expenses_eur=other,advance_eur=advance,status="approved",
+                    created_by="demo-system",approved_by="demo-system",
+                    approved_at=datetime(2026,11,27,tzinfo=timezone.utc),
+                    note="FIKTÍVNY CESTOVNÝ PRÍKAZ NA UKÁŽKU")).inserted_primary_key[0]
+                if ix==0:
+                    session.execute(insert(travel_meals).values(trip_id=trip_id,day=date(2026,11,18),
+                        breakfast=False,lunch=True,dinner=False,cannot_use_provided=False))
         audit(session,"system","demo.seed","10 fictional employees, November 2026")
         session.commit()
         return {"seeded":True,"employees":len(created)}
