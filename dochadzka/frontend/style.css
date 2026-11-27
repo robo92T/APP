@@ -190,3 +190,17 @@ body{background:#edf3fa}
 .gr-bulk-person{padding:10px;background:white;border:1px solid #e4ecf7;border-radius:9px;font-size:12px;display:block}
 .gr-bulk-person input{margin-right:6px}
 .gr-bulk-person small{display:block;color:#8094ae;padding:4px 0 0 21px}
+
+/* BID v9 · Slovak business travel and daily meal eligibility */
+.travel-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:13px;margin:17px 0}
+.travel-kpis .gr-stat{min-height:110px}
+.travel-kpis .gr-stat strong{font-size:clamp(20px,2.1vw,27px);font-variant-numeric:tabular-nums}
+#travelNew .form-grid{grid-template-columns:repeat(auto-fit,minmax(175px,1fr));align-items:end;gap:14px}
+#travelNew .field{margin-bottom:0}
+#travelDetails{scroll-margin-top:30px}
+#travelDetails table,#mealOverview table{font-variant-numeric:tabular-nums}
+#mealDailyDetails{margin-top:20px;scroll-margin-top:30px}
+#travelDetails .gr-stat{border-top:3px solid #edc83d}
+#mealOverview .gr-stat:first-child{border-top:3px solid #38a886}
+#mealOverview .gr-stat:nth-child(2){border-top:3px solid #407fb8}
+@media(max-width:700px){.travel-kpis{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}#travelNew .form-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
