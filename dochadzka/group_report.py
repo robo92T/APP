@@ -153,7 +153,7 @@ def install(app,Employee,Event,Absence,Shift,Base,db,require_role):
                     status="Prestávka*";key="break"
                 elif is_current and state=="away":
                     status="Mimo pracoviska*";key="away"
-                elif r["minutes"]>0:
+                elif r["worked"]>0:
                     status="Odpracované";key="away"
                 elif r["warnings"]:
                     status="Vyžaduje kontrolu";key="unrecorded"
@@ -171,13 +171,13 @@ def install(app,Employee,Event,Absence,Shift,Base,db,require_role):
                     "last_kind":latest_punch.kind if latest_punch else None,
                     "planned_min":r["plan"],"worked_min":r["worked"],
                     "break_min":r["breaks"],"credited_min":r["credit"],
-                    "saldo_min":r["saldo"],"component":", ".join(absent_labels) if absent_labels else ("Práca" if r["minutes"] else "—"),
+                    "saldo_min":r["saldo"],"component":", ".join(absent_labels) if absent_labels else ("Práca" if r["worked"] else "—"),
                     "warnings":warning}
                 report_rows.append(out)
                 counts[key]+=1;counts["total"]+=1
                 if warning:counts["warning"]+=1
             else:
-                totals={key:sum(r[key] for r in daily) for key in ("plan","minutes","breaks","credit","saldo")}
+                totals={key:sum(r[key] for r in daily) for key in ("plan","worked","breaks","credit","saldo")}
                 category=calculate(records,begin,finish)
                 component_minutes=defaultdict(int)
                 for r in daily:
@@ -189,7 +189,7 @@ def install(app,Employee,Event,Absence,Shift,Base,db,require_role):
                 presence=", ".join(ABSENCE_LABELS.get(a.kind,a.kind) for a in today_absences) if today_absences else ("Príchod otvorený*" if state=="present" else "Mimo / bez otvoreného príchodu")
                 warnings=sum(len(r["warnings"]) for r in daily)+len(category["warnings"])
                 out={**common,"presence":presence,
-                    "planned_min":totals["plan"],"worked_min":totals["minutes"],
+                    "planned_min":totals["plan"],"worked_min":totals["worked"],
                     "break_min":totals["breaks"],"credited_min":totals["credit"],
                     "saldo_min":totals["saldo"],
                     "vacation_min":component_minutes["vacation"],"doctor_min":component_minutes["doctor"],
@@ -199,7 +199,7 @@ def install(app,Employee,Event,Absence,Shift,Base,db,require_role):
                     "saturday_min":category["saturday_minutes"],
                     "sunday_min":category["sunday_minutes"],
                     "holiday_min":category["holiday_label_minutes"],
-                    "attendance_days":sum(r["minutes"]>0 for r in daily),
+                    "attendance_days":sum(r["worked"]>0 for r in daily),
                     "warnings":warnings}
                 report_rows.append(out)
                 counts["total"]+=1
