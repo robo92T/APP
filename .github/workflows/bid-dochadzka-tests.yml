@@ -1,0 +1,41 @@
+name: BID Dochádzka - Python & JavaScript validation
+
+on:
+  push:
+    branches:
+      - feature/sk-dochadzka
+  workflow_dispatch:
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: dochadzka
+    env:
+      PYTHONPATH: .
+      DATABASE_URL: sqlite:///./test_ci_attendance.db
+      AUTH_SECRET: test-only-very-long-jwt-secret-not-used-in-production-2026
+      BOOTSTRAP_ADMIN_USERNAME: ci-admin
+      BOOTSTRAP_ADMIN_PASSWORD: TestOnlyPassword2026!
+      ONE_TIME_ADMIN_RESET: "false"
+      APP_ENV: preview
+      DEMO_SEED: "10"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install runtime and tests
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest httpx
+      - name: Compile Python code
+        run: python -m compileall -q .
+      - name: Run unit and integration tests
+        run: pytest -q
+      - name: Check JavaScript syntax
+        run: |
+          node --check frontend/app.js
+          node --check frontend/kiosk-v5.js
