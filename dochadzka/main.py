@@ -306,4 +306,4 @@ from hr_profiles import install as install_hr_profiles
 install_hr_profiles(app,Base,Employee,engine,db,require_role,audit)
 
 from pdf_reports import install as install_pdf_reports
-install_pdf_reports(app,Employee,Event,Absence,db,require_role)
+install_pdf_reports(app,Employee,Event,Absence,db,require_role,_current_account)
