@@ -97,6 +97,23 @@ def seed_preview(Base,engine,Employee,Event,Absence,Shift,audit):
             session.add(Absence(employee_id=e.id,kind=kind,start=start,end=end,minutes=minutes,
                 status="pending" if start.month==12 else "approved",
                 note="FIKTÍVNE TESTOVACIE ÚDAJE"))
+        org_table=Base.metadata.tables.get("org_unit")
+        org_members=Base.metadata.tables.get("org_membership")
+        if org_table is not None and org_members is not None:
+            root=session.execute(insert(org_table).values(name="BID DEMO – spoločnosť",
+                short="BID",kind="spoločnosť",cost_center="000",
+                active=True)).inserted_primary_key[0]
+            ids={}
+            for dept,short,center in [
+                ("Personalistika a mzdy","HR","110"),("Ekonomika","EKO","120"),
+                ("IT a digitalizácia","IT","130"),("Dispečing","DIS","210"),
+                ("Zákaznícke centrum","ZC","220")]:
+                manager={"Dispečing":created[7].id,"Zákaznícke centrum":created[9].id}.get(dept)
+                ids[dept]=session.execute(insert(org_table).values(name=dept,short=short,
+                    kind="oddelenie",parent_id=root,manager_id=manager,
+                    cost_center=center,active=True)).inserted_primary_key[0]
+            for i,(_,_,dept,_,_,_,_) in enumerate(NAMES):
+                session.execute(insert(org_members).values(employee_id=created[i].id,unit_id=ids[dept]))
         audit(session,"system","demo.seed","10 fictional employees, November 2026")
         session.commit()
         return {"seeded":True,"employees":len(created)}
