@@ -89,3 +89,17 @@ Tento prototyp nemá offline queue, deduplikáciu udalostí po odpojení ani kry
 
 ### Otvorené položky pred produkciou
 Pravidlá rolí, zápis a schvaľovanie zmien pípnutí, zamykanie mesačnej uzávierky, pravé viacúrovňové workflow, mzdové exporty, podrobný zákonný nárok na dovolenku, diferenciácia druhu platených prekážok, bezpečné offline RFID/anti-replay, opravy cezpolnočných zmien, migrácie a zálohovanie databázy, frontend testy, MFA/SSO, bezpečnosť a nasadenie.
+
+
+## Mobilná aplikácia (PWA)
+Používa rovnakú HTTPS adresu ako web: https://sk-dochadzka-portal.onrender.com/. Ide o **inštalovateľnú webovú aplikáciu**, nie natívny Android APK či iOS aplikáciu v obchode.
+
+**Android (Chrome):** otvor web -> menu troch bodiek -> `Pridať na plochu` alebo `Nainštalovať aplikáciu`. Ak prehliadač podporuje inštalačnú výzvu, zobrazí sa aj tlačidlo „Nainštalovať appku“.
+
+**iPhone (Safari):** otvor web -> Zdieľať -> `Pridať na plochu`.
+
+**Samoobsluha zamestnanca:** administrátor v sekcii Zamestnanci vytvorí zamestnanca a v sekcii Používateľské účty mu vytvorí login, heslo, rolu `employee` a priradí ID zamestnanca. Zamestnanec potom uvidí len vlastné mesačné uzavreté odpracované hodiny, posledné pípnutie a svoje žiadosti. Môže sám odoslať žiadosť o dovolenku, lekára, sprevádzanie a podobné neprítomnosti, zmeniť si heslo.
+
+**Bezpečnostné upozornenia:** mobilný frontend používa tie isté backendové údaje ako web a API pre samoobsluhu je filtrované podľa overeného prihláseného účtu, nie parametra od klienta. PWA cache obsahuje len verejné súbory aplikácie; žiadne API odpovede ani údaje o zamestnancoch neukladá offline. **Offline zadávanie a neskoršie odosielanie udalostí nie je implementované.** Token je v sessionStorage a relácia sa môže pri uzavretí mobilného webového okna ukončiť. Admin/HR roly si pred produkciou vyžadujú podrobnejší bezpečnostný audit.
+
+**Dôležité:** bez trvalej databázy a detailného vyhodnotenia legislatívy sa tento systém nesmie používať na ostrú evidenciu zamestnancov a výplatné podklady.
