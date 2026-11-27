@@ -13,7 +13,17 @@ from sqlalchemy import create_engine, String, Integer, DateTime, Date, ForeignKe
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, Session, sessionmaker
 
 DB_URL = os.getenv("DATABASE_URL", "sqlite:///./attendance.db")
-engine = create_engine(DB_URL, connect_args={"check_same_thread": False} if DB_URL.startswith("sqlite") else {})
+if DB_URL.startswith("postgres://"):
+    DB_URL = "postgresql://" + DB_URL[len("postgres://"):]
+if DB_URL.startswith("postgresql://"):
+    DB_URL = "postgresql+psycopg://" + DB_URL[len("postgresql://"):]
+DATABASE_IS_PERSISTENT = DB_URL.startswith("postgresql+psycopg://") or (
+    DB_URL.startswith("sqlite") and os.getenv("SQLITE_PERSISTENT_DISK", "").lower() == "true"
+)
+engine = create_engine(
+    DB_URL, pool_pre_ping=True,
+    connect_args={"check_same_thread": False, "timeout": 30} if DB_URL.startswith("sqlite") else {}
+)
 SessionLocal = sessionmaker(engine, expire_on_commit=False)
 TZ = ZoneInfo("Europe/Bratislava")
 app = FastAPI(title="SK Dochádzka", version="0.1.0", description="API pre dochádzku, absencie, schvaľovanie a Raspberry Pi RFID")
@@ -93,7 +103,14 @@ class AbsenceCreate(BaseModel):
     note: str = Field(default="",max_length=400)
 KINDS = {"vacation","doctor","accompany","doctor_unpaid","accompany_unpaid","sick","ocr","maternity","paternity","parental","unpaid","paid_leave","business_trip","training","wedding","funeral","blood_donation","other"}
 @app.get("/health")
-def health(): return {"status":"ok"}
+def health():
+    # A probe must check the backing datastore, not just the Python HTTP process.
+    try:
+        with engine.connect() as connection: connection.execute(text("SELECT 1"))
+    except Exception:
+        raise HTTPException(503,"Databáza nie je dostupná")
+    return {"status":"ok","database":"postgresql" if DATABASE_IS_PERSISTENT and not DB_URL.startswith("sqlite") else "sqlite",
+            "persistent":DATABASE_IS_PERSISTENT}
 @app.get("/api/employees", dependencies=[Depends(admin)])
 def employees(db: Session = Depends(db)):
     return [{"id":e.id,"name":e.name,"weekly_minutes":e.weekly_minutes,"work_days":e.work_days,"annual_leave_weeks":e.annual_leave_weeks,"start_date":e.start_date,"active":e.active} for e in db.scalars(select(Employee)).all()]
