@@ -62,6 +62,11 @@ def admin(request: Request, session: Session = Depends(db)):
     if user.role not in ('admin','hr'):
         raise HTTPException(403, 'Nedostatočné oprávnenie')
     return user
+def require_auditor(request:Request,session:Session=Depends(db)):
+    user=_current_account(request,session)
+    if user.role not in ("admin","hr","auditor"):
+        raise HTTPException(403,"Nedostatočné oprávnenie")
+    return user
 def terminal(x_terminal_key: Optional[str] = Header(None)):
     key = os.getenv("TERMINAL_API_KEY")
     if not key or not secrets.compare_digest(x_terminal_key or "", key):
@@ -298,7 +303,7 @@ def timesheet(employee_id:int,start:date,end:date,db:Session=Depends(db)):
     if current:warnings.append("Neuzavretý príchod – nepočíta sa do odpracovaného času")
     net=sum(p["net_minutes"] for p in pairs)
     return {"employee_id":e.id,"from":start,"to":end,"pairs":pairs,"total_worked_minutes":net,"warnings":warnings,"note":"Saldo, nočná práca a príplatky vyžadujú konkrétny plán zmien; nie sú týmto reportom vypočítané."}
-@app.get("/api/audit", dependencies=[Depends(admin)])
+@app.get("/api/audit", dependencies=[Depends(require_auditor)])
 def audits(limit:int=Query(default=100,ge=1,le=500),db:Session=Depends(db)):
     return [{"at":x.at,"actor":x.actor,"action":x.action,"detail":x.detail} for x in db.scalars(select(Audit).order_by(Audit.id.desc()).limit(limit)).all()]
 
