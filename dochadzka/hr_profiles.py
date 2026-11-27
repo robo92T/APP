@@ -92,7 +92,7 @@ def install(app, Base, Employee, engine, db, require_role, audit):
             "shift_template_id":p.shift_template_id if p else None,
             "weekly_minutes":e.weekly_minutes,"work_days":e.work_days,
             "start_date":e.start_date,"end_date":e.end_date,"card_uid":e.card_uid,"active":e.active}
-    @app.get("/api/hr/employees",dependencies=[Depends(require_role("admin","hr","manager"))])
+    @app.get("/api/hr/employees",dependencies=[Depends(require_role("admin","hr"))])
     def hr_employees(session:Session=Depends(db)):
         people=session.scalars(select(Employee).order_by(Employee.name)).all()
         profile_map={p.employee_id:p for p in session.scalars(select(Profile)).all()}
@@ -151,3 +151,37 @@ def install(app, Base, Employee, engine, db, require_role, audit):
         obj=Template(**data.model_dump())
         session.add(obj);session.flush();audit(session,"hr","template.create",str(obj.id));session.commit()
         return {"id":obj.id}
+ 
+    @app.get("/api/team/absences")
+    def team_absences(account=Depends(require_role("admin","hr","manager")),session:Session=Depends(db)):
+        """Managers may see pending requests only for directly assigned reports."""
+        from main import Absence
+        if account.role in ("admin","hr"):
+            employee_ids=[e.id for e in session.scalars(select(Employee)).all()]
+        elif account.employee_id is not None:
+            employee_ids=[p.employee_id for p in session.scalars(select(Profile).where(Profile.manager_id==account.employee_id)).all()]
+        else:
+            employee_ids=[]
+        if not employee_ids:return []
+        people={e.id:e.name for e in session.scalars(select(Employee).where(Employee.id.in_(employee_ids))).all()}
+        requests=session.scalars(select(Absence).where(Absence.employee_id.in_(employee_ids)).order_by(Absence.start.desc())).all()
+        return [{"id":a.id,"employee_id":a.employee_id,"employee_name":people.get(a.employee_id,""),
+                 "kind":a.kind,"start":a.start,"end":a.end,"minutes":a.minutes,
+                 "status":a.status} for a in requests]
+    @app.post("/api/team/absences/{absence_id}/{decision}")
+    def decide_team_absence(absence_id:int,decision:str,account=Depends(require_role("admin","hr","manager")),session:Session=Depends(db)):
+        from main import Absence, is_closed_range
+        if decision not in ("approve","reject"):raise HTTPException(422,"Neplatné rozhodnutie")
+        item=session.get(Absence,absence_id)
+        if not item:raise HTTPException(404,"Žiadosť neexistuje")
+        if item.status!="pending":raise HTTPException(409,"Žiadosť už nie je otvorená")
+        if account.employee_id==item.employee_id:raise HTTPException(403,"Vlastnú žiadosť nemožno schváliť")
+        if is_closed_range(session,item.start,item.end):raise HTTPException(409,"Obdobie je uzavreté")
+        if account.role=="manager":
+            if account.employee_id is None:raise HTTPException(403,"Vedúci nie je priradený zamestnancovi")
+            p=session.get(Profile,item.employee_id)
+            if p is None or p.manager_id!=account.employee_id:raise HTTPException(403,"Žiadosť nepatrí podriadenému")
+        item.status="approved" if decision=="approve" else "rejected"
+        audit(session,account.username,f"absence.{decision}",str(item.id))
+        session.commit()
+        return {"id":item.id,"status":item.status}
