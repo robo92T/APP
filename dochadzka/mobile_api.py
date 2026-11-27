@@ -53,6 +53,8 @@ def install(app,Employee,Event,Absence,db,current_account,audit):
     def create_absence(data:SelfAbsence,account=Depends(current_account),employee=Depends(mine),session:Session=Depends(db)):
         if data.kind not in ALLOWED:raise HTTPException(422,"Neplatný druh žiadosti")
         if data.end<data.start or (data.end-data.start).days>366:raise HTTPException(422,"Neplatné obdobie")
+        from main import is_closed_range
+        if is_closed_range(session,data.start,data.end):raise HTTPException(409,"Zvolené obdobie je uzavreté")
         # No client-controlled employee ID: derive identity from verified token.
         item=Absence(employee_id=employee.id,kind=data.kind,start=data.start,end=data.end,minutes=data.minutes,status=("approved" if data.kind in {"ocr","sick"} else "pending"),note=data.note)
         session.add(item);session.flush()
