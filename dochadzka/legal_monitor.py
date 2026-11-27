@@ -41,6 +41,26 @@ SOURCES = {
         "url": "https://www.ip.gov.sk/pracovnopravne-vztahy/pracovny-cas-doba-odpocinku/novinky-prekazkach-praci-od-1-januara-2026.html",
         "authority": "Národný inšpektorát práce", "topic": "Lekár a sprevádzanie"
     },
+    "cestovne_nahrady": {
+        "title":"Zákon o cestovných náhradách – 283/2002 Z. z.",
+        "url":"https://www.slov-lex.sk/ezbierky/pravne-predpisy/SK/ZZ/2002/283/",
+        "authority":"Slov-Lex","topic":"Služobné cesty, stravné a náhrady"
+    },
+    "sadzby_stravne_2026": {
+        "title":"Sadzby stravného od 1.12.2026 – 255/2026 Z. z.",
+        "url":"https://www.slov-lex.sk/ezbierky/pravne-predpisy/SK/ZZ/2026/255/",
+        "authority":"Slov-Lex","topic":"Tuzemské stravné a minimálna poukážka"
+    },
+    "nip_stravne_2026": {
+        "title":"NIP – sumy stravného od 1.12.2026",
+        "url":"https://www.ip.gov.sk/pracovnopravne-vztahy/pracovne-cesty/sumy-stravneho-od-1-decembra-2026.html",
+        "authority":"Národný inšpektorát práce","topic":"Tuzemské stravné"
+    },
+    "kilometrove_2026": {
+        "title":"NIP – kilometrovné 2026",
+        "url":"https://www.ip.gov.sk/pracovnopravne-vztahy/pracovne-cesty/sumy-zakladnej-nahrady-za-pouzivanie-motorovych-vozidiel-pri-pracovnych-cestach-od-1-januara-2026-2.html",
+        "authority":"Národný inšpektorát práce","topic":"Náhrady za súkromné vozidlo"
+    },
     "nip_sviatky": {
         "title": "NIP – Sviatky 8. máj a 15. september 2026",
         "url": "https://www.ip.gov.sk/pracovnopravne-vztahy/pracovny-cas-doba-odpocinku/sviatky-8-maj-15-september-2026-z-pohladu-pracovneho-prava.html",
