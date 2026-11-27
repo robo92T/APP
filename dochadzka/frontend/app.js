@@ -32,16 +32,36 @@ const hrOption=(value,label,selected)=>'<option value="'+esc(value)+'" '+(String
 async function employeesView(){
   const [people,templates]=await Promise.all([api('/api/hr/employees'),api('/api/hr/shift-templates')]);
   hrRows=people;hrTemplates=templates;
-  $('#content').innerHTML='<div class="panel"><div class="section-top"><div><h3>Zamestnanci a účty</h3><span class="muted">'+people.length+' zamestnancov · kliknutím otvoríš detail</span></div><div class="actions"><input id="hrSearch" placeholder="Hľadať meno, číslo, útvar…" aria-label="Hľadať zamestnancov"><button class="primary" id="hrNew">+ Nový zamestnanec</button></div></div><div id="hrGrid" class="scroll"></div></div><div class="panel"><div class="section-top"><h3>Pracovné zmeny a šablóny</h3><button class="secondary" id="hrNewTemplate">+ Nová šablóna zmeny</button></div><div class="shift-pills">'+templates.map(t=>'<span class="shift-pill">'+esc(t.name)+' · '+esc(t.start)+'–'+esc(t.end)+'</span>').join('')+'</div><p class="subtle">Šablóna v profile nastaví predvolený režim zamestnanca. Konkrétne zmeny po dňoch sa plánujú v časti Zmeny a plán.</p></div><div id="hrModalHost"></div>';
+  $('#content').innerHTML='<div class="panel"><div class="section-top"><div><h3>Zamestnanci a účty</h3><span class="muted">'+people.length+' zamestnancov · kliknutím otvoríš detail</span></div><div class="actions"><input id="hrSearch" placeholder="Hľadať meno, číslo, útvar…" aria-label="Hľadať zamestnancov"><label class="field hr-period"><span>Obdobie PDF</span><input id="hrPdfMonth" type="month" value="'+localDate().slice(0,7)+'"></label><button class="primary" id="hrNew">+ Nový zamestnanec</button></div></div><div id="hrGrid" class="scroll"></div></div><div class="panel"><div class="section-top"><h3>Pracovné zmeny a šablóny</h3><button class="secondary" id="hrNewTemplate">+ Nová šablóna zmeny</button></div><div class="shift-pills">'+templates.map(t=>'<span class="shift-pill">'+esc(t.name)+' · '+esc(t.start)+'–'+esc(t.end)+'</span>').join('')+'</div><p class="subtle">Šablóna v profile nastaví predvolený režim zamestnanca. Konkrétne zmeny po dňoch sa plánujú v časti Zmeny a plán.</p></div><div id="hrModalHost"></div>';
   const grid=()=>{
     const q=($('#hrSearch').value||'').trim().toLocaleLowerCase('sk-SK');
     const shown=people.filter(p=>[p.name,p.personal_number,p.department,p.job_title].some(v=>String(v||'').toLocaleLowerCase('sk-SK').includes(q)));
-    $('#hrGrid').innerHTML='<table class="hr-table"><thead><tr><th>Os. č.</th><th>Meno a priezvisko</th><th>Útvar / pozícia</th><th>Úväzok</th><th>RFID čip</th><th>Pracovný režim</th><th>Stav</th><th></th></tr></thead><tbody>'+shown.map(p=>'<tr><td>'+esc(p.personal_number)+'</td><td><strong>'+esc(p.name)+'</strong><div class="subtle">'+esc(p.email)+'</div></td><td>'+esc(p.department||'—')+'<div class="subtle">'+esc(p.job_title)+'</div></td><td>'+esc(p.fte).replace('.',',')+'</td><td>'+(p.card_uid?'<span class="pill approved">'+esc(p.card_uid)+'</span>':'—')+'</td><td>'+esc(hrTemplates.find(t=>t.id===p.shift_template_id)?.name||p.work_regime||'—')+'</td><td><span class="pill '+(p.active?'approved':'rejected')+'">'+(p.active?'Aktívny':'Neaktívny')+'</span></td><td><button class="secondary mini" data-hr-edit="'+p.id+'">Upraviť</button></td></tr>').join('')+'</tbody></table>'+(shown.length?'':'<p class="empty">Nenašli sa žiadni zamestnanci.</p>');
+    $('#hrGrid').innerHTML='<table class="hr-table"><thead><tr><th>Os. č.</th><th>Meno a priezvisko</th><th>Útvar / pozícia</th><th>Úväzok</th><th>RFID čip</th><th>Pracovný režim</th><th>Stav</th><th></th></tr></thead><tbody>'+shown.map(p=>'<tr><td>'+esc(p.personal_number)+'</td><td><strong>'+esc(p.name)+'</strong><div class="subtle">'+esc(p.email)+'</div></td><td>'+esc(p.department||'—')+'<div class="subtle">'+esc(p.job_title)+'</div></td><td>'+esc(p.fte).replace('.',',')+'</td><td>'+(p.card_uid?'<span class="pill approved">'+esc(p.card_uid)+'</span>':'—')+'</td><td>'+esc(hrTemplates.find(t=>t.id===p.shift_template_id)?.name||p.work_regime||'—')+'</td><td><span class="pill '+(p.active?'approved':'rejected')+'">'+(p.active?'Aktívny':'Neaktívny')+'</span></td><td><button class="secondary mini" data-hr-edit="'+p.id+'">Upraviť</button> <button class="secondary mini" data-hr-pdf="'+p.id+'">PDF</button></td></tr>').join('')+'</tbody></table>'+(shown.length?'':'<p class="empty">Nenašli sa žiadni zamestnanci.</p>');
     document.querySelectorAll('[data-hr-edit]').forEach(btn=>btn.onclick=()=>openHrEditor(Number(btn.dataset.hrEdit)));
+    document.querySelectorAll('[data-hr-pdf]').forEach(btn=>btn.onclick=()=>downloadEmployeePdf(Number(btn.dataset.hrPdf)));
   };
   $('#hrSearch').oninput=grid;grid();
   $('#hrNew').onclick=()=>openHrEditor(null);
   $('#hrNewTemplate').onclick=openHrTemplateEditor;
+}
+async function downloadEmployeePdf(employeeId){
+  const period=$('#hrPdfMonth')?.value||localDate().slice(0,7);
+  const [year,month]=period.split('-').map(Number);
+  if(!year||!month)return toast('Zvoľ mesiac výkazu',true);
+  try{
+    const response=await fetch('/api/reports/monthly/'+employeeId+'/pdf?year='+year+'&month='+month,{headers:{Authorization:'Bearer '+token},cache:'no-store'});
+    if(!response.ok){
+      const err=await response.json().catch(()=>({detail:'PDF export zlyhal'}));
+      throw new Error(typeof err.detail==='string'?err.detail:'PDF export zlyhal');
+    }
+    const blob=await response.blob();
+    const url=URL.createObjectURL(blob);
+    const link=document.createElement('a');
+    link.href=url;link.download='dochadzka_'+employeeId+'_'+year+'_'+String(month).padStart(2,'0')+'.pdf';
+    document.body.append(link);link.click();link.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),2000);
+    toast('PDF výkaz bol pripravený');
+  }catch(error){toast(error.message,true)}
 }
 function closeHrModal(){const modal=$('#hrModalHost');if(modal)modal.innerHTML=''}
 function openHrEditor(id){
