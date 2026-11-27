@@ -91,3 +91,17 @@ def test_travel_private_data_requires_login(client):
     for url in ("/api/travel","/api/meals/month?year=2026&month=11",
                 "/api/travel/summary.csv"):
         assert client.get(url).status_code==401
+
+def test_meal_csv_export(client,headers):
+    response=client.get("/api/meals/month.csv?year=2026&month=11",headers=headers)
+    assert response.status_code==200,response.text
+    assert response.content.startswith(b"\\xef\\xbb\\xbf")
+    assert b"Tamara" in response.content
+    assert response.headers["cache-control"]=="no-store"
+
+def test_group_report_shows_approved_trip(client,headers):
+    response=client.get("/api/group-report?mode=day&day=2026-11-18",headers=headers)
+    assert response.status_code==200,response.text
+    person=next(x for x in response.json()["rows"] if x["name"]=="Adam Demonštračný")
+    assert person["component"]=="Služobná cesta"
+    assert person["status"]=="Služobná cesta"
