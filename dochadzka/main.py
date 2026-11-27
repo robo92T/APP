@@ -298,3 +298,6 @@ if STATIC_DIR.is_dir():
 
 from scheduling import install as install_scheduling
 install_scheduling(app,Base,Employee,Event,Absence,engine,db,admin,audit)
+
+from mobile_api import install as install_mobile_api
+install_mobile_api(app,Employee,Event,Absence,db,_current_account,audit)
