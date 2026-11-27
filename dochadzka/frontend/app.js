@@ -5,7 +5,7 @@ const monthStart=()=>localDate(new Date(new Date().getFullYear(),new Date().getM
 function toast(msg,bad=false){const e=$('#toast');e.textContent=msg;e.style.background=bad?'#a4334d':'#173351';e.classList.add('show');setTimeout(()=>e.classList.remove('show'),3700)}
 async function api(url,opts={}){const r=await fetch(url,{...opts,headers:{'Content-Type':'application/json',...(token?{Authorization:'Bearer '+token}:{}),...(opts.headers||{})}});let d;try{d=await r.json()}catch{d={detail:'Neznáma odpoveď servera'}}if(!r.ok){if(r.status===401&&url!='/api/auth/login'){logout();throw Error('Relácia vypršala. Prihláste sa.')};throw Error(typeof d.detail==='string'?d.detail:'Server vrátil chybu '+r.status)}return d}
 function logout(){token='';currentUser=null;sessionStorage.removeItem('attendance_token');$('#app').classList.add('hidden');$('#login').classList.remove('hidden')}
-async function init(){if(!token){logout();return}try{currentUser=await api('/api/auth/me');$('#userBadge').textContent=currentUser.username.toUpperCase();$('#login').classList.add('hidden');$('#app').classList.remove('hidden');$('#today').textContent=new Intl.DateTimeFormat('sk-SK',{dateStyle:'long'}).format(new Date());if(currentUser.must_change_password){document.querySelectorAll('.nav').forEach(n=>n.classList.toggle('hidden',n.dataset.view!=='accounts'));view='accounts';navigate('accounts');return}if(['employee','manager','auditor'].includes(currentUser.role)){employees=[];document.querySelectorAll('.nav').forEach(n=>{n.classList.toggle('hidden',!['dashboard','requests','accounts'].includes(n.dataset.view))});view='dashboard';}else{document.querySelectorAll('.nav').forEach(n=>n.classList.remove('hidden'));await refreshEmployees();}navigate(view)}catch(e){logout();toast(e.message,true)}}
+async function init(){if(!token){logout();return}try{currentUser=await api('/api/auth/me');$('#userBadge').textContent=currentUser.username.toUpperCase();$('#login').classList.add('hidden');$('#app').classList.remove('hidden');$('#today').textContent=new Intl.DateTimeFormat('sk-SK',{dateStyle:'long'}).format(new Date());if(currentUser.must_change_password){document.querySelectorAll('.nav').forEach(n=>n.classList.toggle('hidden',n.dataset.view!=='accounts'));view='accounts';navigate('accounts');return}if(['employee','manager','auditor'].includes(currentUser.role)){employees=[];document.querySelectorAll('.nav').forEach(n=>{n.classList.toggle('hidden',!['dashboard','requests','accounts'].includes(n.dataset.view))});view='dashboard';}else{document.querySelectorAll('.nav').forEach(n=>n.classList.remove('hidden'));await refreshEmployees();}navigate(view);updateStorageWarning()}catch(e){logout();toast(e.message,true)}}
 async function refreshEmployees(){try{employees=await api('/api/employees')}catch(e){employees=[];toast(e.message,true)}}
 const choose=(id='empSelect')=>'<select id="'+id+'">'+employees.map(e=>'<option value="'+e.id+'">'+esc(e.name)+'</option>').join('')+'</select>';
 function head(title){$('#pageTitle').textContent=title;$('#breadcrumb').textContent=title.toUpperCase();document.querySelectorAll('.nav').forEach(x=>x.classList.toggle('active',x.dataset.view===view))}
@@ -31,6 +31,7 @@ async function managerRequests(){
 async function employeeDashboard(){
 const d=await api('/api/me/summary');
 $('#content').innerHTML='<p class="intro">Vitaj, <strong>'+esc(d.name)+'</strong>. Tu je prehľad tvojich vlastných údajov za '+esc(d.period)+'.</p><div class="stats"><div class="stat"><div class="stat-icon">◷</div><div class="value">'+fmt(d.worked_minutes)+'</div><small>Uzavreté odpracované hodiny</small></div><div class="stat"><div class="stat-icon">▣</div><div class="value">'+d.requests.length+'</div><small>Žiadosti v mesiaci</small></div><div class="stat"><div class="stat-icon">◈</div><div class="value">'+(d.last_event?esc(d.last_event.kind):'—')+'</div><small>Posledné pípnutie</small></div><div class="stat"><div class="stat-icon">♙</div><div class="value">'+fmt(d.weekly_minutes)+'</div><small>Týždenný úväzok</small></div></div><div class="panel"><div class="section-top"><h3>Moje žiadosti</h3><button class="primary" data-go="requests">+ Nová žiadosť</button><button id="selfPdf" class="secondary">Môj výkaz PDF</button></div><div class="scroll"><table><thead><tr><th>Typ</th><th>Od</th><th>Do</th><th>Stav</th></tr></thead><tbody>'+d.requests.map(x=>'<tr><td>'+esc(x.kind)+'</td><td>'+esc(x.start)+'</td><td>'+esc(x.end)+'</td><td><span class="pill '+esc(x.status)+'">'+esc(x.status)+'</span></td></tr>').join('')+'</tbody></table></div></div><div class="notice">'+esc(d.note)+(d.warnings.length?' Upozornenia: '+d.warnings.map(esc).join(', '):'')+'</div>';
+  $('#selfPdf')?.addEventListener('click',async()=>{const period=localDate().slice(0,7);const [year,month]=period.split('-');try{await fetchProtectedFile('/api/me/monthly-pdf?year='+year+'&month='+Number(month),'moja_dochadzka_'+period+'.pdf');toast('PDF výkaz uložený')}catch(e){toast(e.message,true)}});
 }
 async function fetchProtectedFile(url,filename){
   const res=await fetch(url,{headers:{Authorization:'Bearer '+token},cache:'no-store'});
@@ -41,12 +42,27 @@ async function fetchProtectedFile(url,filename){
 async function payrollView(){
   const today=localDate().slice(0,7);
   const closed=await api('/api/payroll/months');
-  $('#content').innerHTML='<div class="grid2"><div class="panel"><h3>Mesačná uzávierka a mzdové podklady</h3><div class="notice">Výpočty sú kontrolné, nejde o právne záväzný výplatný podklad. Uzávierka blokuje úpravy rozpisu a neprítomností v uzavretom mesiaci.</div><label class="field"><span>Vyber mesiac</span><input id="payrollPeriod" type="month" value="'+today+'"></label><div class="actions"><button id="payrollExport" class="primary">Export CSV</button><button id="payrollClose" class="secondary">Uzavrieť mesiac</button><button id="payrollOpen" class="secondary">Odomknúť mesiac</button></div></div><div class="panel"><h3>História uzávierok</h3><div class="scroll"><table><thead><tr><th>Obdobie</th><th>Uzavrel</th><th>Dátum</th></tr></thead><tbody>'+closed.map(x=>'<tr><td>'+x.year+'-'+String(x.month).padStart(2,'0')+'</td><td>'+esc(x.closed_by)+'</td><td>'+esc(String(x.closed_at).slice(0,16))+'</td></tr>').join('')+'</tbody></table></div></div></div>';
+  $('#content').innerHTML='<div class="grid2"><div class="panel"><h3>Mesačná uzávierka a mzdové podklady</h3><div class="notice">Výpočty sú kontrolné, nejde o právne záväzný výplatný podklad. Uzávierka blokuje úpravy rozpisu a neprítomností v uzavretom mesiaci.</div><label class="field"><span>Vyber mesiac</span><input id="payrollPeriod" type="month" value="'+today+'"></label><div class="actions"><button id="payrollExport" class="primary">Export CSV</button><button id="payrollClose" class="secondary">Uzavrieť mesiac</button><button id="payrollOpen" class="secondary">Odomknúť mesiac</button><button id="encryptedBackup" class="secondary">Šifrovaná záloha dát</button></div></div><div class="panel"><h3>História uzávierok</h3><div class="scroll"><table><thead><tr><th>Obdobie</th><th>Uzavrel</th><th>Dátum</th></tr></thead><tbody>'+closed.map(x=>'<tr><td>'+x.year+'-'+String(x.month).padStart(2,'0')+'</td><td>'+esc(x.closed_by)+'</td><td>'+esc(String(x.closed_at).slice(0,16))+'</td></tr>').join('')+'</tbody></table></div></div></div>';
   const period=()=>($('#payrollPeriod').value||today).split('-').map(Number);
   $('#payrollExport').onclick=async()=>{const [y,m]=period();try{await fetchProtectedFile('/api/payroll/export.csv?year='+y+'&month='+m,'mzdy_dochadzka_'+y+'_'+String(m).padStart(2,'0')+'.csv');toast('Export hotový')}catch(e){toast(e.message,true)}};
   $('#payrollClose').onclick=async()=>{const [y,m]=period();if(!confirm('Uzavrieť mesiac '+y+'-'+m+'? Predtým skontroluj všetky výkazy.'))return;try{await api('/api/payroll/close/'+y+'/'+m,{method:'POST'});toast('Mesiac uzavretý');payrollView()}catch(e){toast(e.message,true)}};
   $('#payrollOpen').onclick=async()=>{const [y,m]=period();if(!confirm('Odomknúť mesiac '+y+'-'+m+'? Operácia sa zaznamená do auditu.'))return;try{await api('/api/payroll/reopen/'+y+'/'+m,{method:'POST'});toast('Mesiac odomknutý');payrollView()}catch(e){toast(e.message,true)}};
-  $('#selfPdf')?.addEventListener('click',async()=>{const period=localDate().slice(0,7);const [year,month]=period.split('-');try{await fetchProtectedFile('/api/me/monthly-pdf?year='+year+'&month='+Number(month),'moja_dochadzka_'+period+'.pdf');toast('PDF výkaz uložený')}catch(e){toast(e.message,true)}});
+  $('#encryptedBackup').onclick=async()=>{
+    if(currentUser?.role!=='admin')return toast('Šifrovanú zálohu môže vytvoriť len administrátor',true);
+    const passphrase=prompt('Heslo na šifrovanie zálohy (min. 16 znakov). Bez tohto hesla sa záloha nedá obnoviť. Neulož ho do GitHubu.');
+    if(!passphrase)return;
+    if(passphrase.length<16)return toast('Heslo zálohy musí mať aspoň 16 znakov',true);
+    const confirmPass=prompt('Potvrď heslo zálohy');
+    if(passphrase!==confirmPass)return toast('Heslá sa nezhodujú',true);
+    try{
+      const response=await fetch('/api/admin/backup',{method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify({passphrase}),cache:'no-store'});
+      if(!response.ok){const err=await response.json().catch(()=>({detail:'Zálohu sa nepodarilo vytvoriť'}));throw Error(err.detail||'Zálohu sa nepodarilo vytvoriť')}
+      const blob=await response.blob();const url=URL.createObjectURL(blob);
+      const link=document.createElement('a');link.href=url;link.download='bid-dochadzka-'+localDate()+'.bidbak';document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),2000);
+      toast('Šifrovaná záloha stiahnutá. Bezpečne si ju odlož mimo GitHubu.');
+    }catch(error){toast(error.message,true)}
+  };
+
 }
 async function employeeRequests(){
 const d=await api('/api/me/summary');
@@ -182,3 +198,14 @@ window.addEventListener('beforeinstallprompt',event=>{event.preventDefault();ins
 $('#installApp')?.addEventListener('click',async()=>{if(!installPrompt)return;installPrompt.prompt();await installPrompt.userChoice;installPrompt=null;$('#installApp').classList.add('hidden')});
 window.addEventListener('appinstalled',()=>{$('#installApp')?.classList.add('hidden');toast('Aplikácia nainštalovaná')});
 if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(()=>{}))}
+
+async function updateStorageWarning(){
+  try{
+    const response=await fetch('/health',{cache:'no-store'});
+    const status=await response.json();
+    const el=$('#storageWarning');
+    if(!el)return;
+    el.classList.toggle('hidden',!!status.persistent);
+    el.textContent=status.persistent?'':'UPOZORNENIE: Údaje sú v dočasnom úložisku a pri reštarte sa môžu stratiť. Nepoužívaj produkčné osobné údaje. V administrácii si môžeš stiahnuť šifrovanú zálohu.';
+  }catch{const el=$('#storageWarning');if(el){el.classList.remove('hidden');el.textContent='Úložisko sa nepodarilo overiť.'}}
+}
