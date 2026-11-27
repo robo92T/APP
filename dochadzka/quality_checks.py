@@ -39,7 +39,7 @@ def inspect(events,regime="fixed"):
                 open_at=None;pause_start=None;pause_minutes=0
     if open_at is not None:
         warnings.append({"at":open_at.isoformat(),"code":"OPEN_SHIFT","message":"Neukončený príchod"})
-    week=defaultdict(int)
+    weekly_totals=defaultdict(int)
     last_end=None
     for start,end,break_min,worked in shifts:
         local=start.astimezone(TZ)
@@ -63,14 +63,14 @@ def inspect(events,regime="fixed"):
         if regime in ("rotating","continuous") and break_min==0 and gross>6:
             warnings.append({"at":local.isoformat(),"code":"PAID_BREAK_VERIFY",
                 "message":"Over, či zamestnanec pracuje bez prerušenia a prestávka sa započítava podľa § 91 ods. 5."})
-        year,week,_=local.isocalendar()
-        week_key=f"{year}-W{week:02d}"
-        week[week_key]+=worked
-    for key,minutes in week.items():
+        iso_year,iso_week,_=local.isocalendar()
+        week_key=f"{iso_year}-W{iso_week:02d}"
+        weekly_totals[week_key]+=worked
+    for key,minutes in weekly_totals.items():
         if minutes>48*60:
             warnings.append({"at":key,"code":"WEEK_OVER_48",
                 "message":"Odpracovaných viac ako 48 h za týždeň; over priemer vo vyrovnávacom období."})
-    return {"shifts":len(shifts),"warnings":warnings,"week_minutes":dict(week)}
+    return {"shifts":len(shifts),"warnings":warnings,"week_minutes":dict(weekly_totals)}
 
 def install(app,Employee,Event,Base,db,require_role):
     @app.get("/api/quality/monthly",dependencies=[Depends(require_role("admin","hr"))])
