@@ -177,3 +177,16 @@ body{background:#edf3fa}
 .gr-detail-actions{margin-top:24px;flex-wrap:wrap}
 @media(max-width:1100px){.group-report-stats{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:700px){.group-report-stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.gr-stat{padding:12px}.group-report-toggle{width:100%}.group-report-toggle button{flex:1;font-size:11px}.group-report-filter-row .field{flex:1 1 42%;min-width:130px}.group-report-filter-row .gr-search{flex:1 1 100%}.gr-grid{min-width:1200px}.gr-grid .gr-sticky-name{left:75px;min-width:160px}.gr-detail-sheet{padding:16px}.gr-detail-metrics strong{font-size:17px}}
+
+/* Aktion-inspired HR review, bulk assignments and customizable report layout */
+.gr-column-picker{border:1px solid #dfe8f3;border-radius:12px;padding:14px 17px;margin-top:14px;background:#f8fbff}
+.gr-column-picker.hidden{display:none!important}
+.gr-columns-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.gr-columns-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
+.gr-columns-grid label{display:flex;gap:8px;align-items:center;font-size:12px;font-weight:650;color:#375273}
+.gr-bulk-people{margin:18px 0;padding:15px;border:1px solid #dfe8f3;border-radius:13px;background:#f8fbff}
+.gr-bulk-people>label{font-weight:800;color:#133a67;display:flex;gap:10px;align-items:center}
+.gr-bulk-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:7px;margin-top:14px}
+.gr-bulk-person{padding:10px;background:white;border:1px solid #e4ecf7;border-radius:9px;font-size:12px;display:block}
+.gr-bulk-person input{margin-right:6px}
+.gr-bulk-person small{display:block;color:#8094ae;padding:4px 0 0 21px}
