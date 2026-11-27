@@ -1,0 +1,19 @@
+{
+  "name": "SK Dochádzka – zamestnanecký portál",
+  "short_name": "Dochádzka",
+  "description": "Mobilný dochádzkový portál zamestnancov a administrátorov.",
+  "lang": "sk",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#112747",
+  "theme_color": "#112747",
+  "icons": [
+    {
+      "src": "/assets/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
