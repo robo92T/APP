@@ -22,7 +22,12 @@ async function auditorDashboard(){
 async function managerDashboard(){
  const list=await api('/api/team/absences');
  const pending=list.filter(x=>x.status==='pending');
+ const [yr,mo]=localDate().slice(0,7).split('-').map(Number);
+ const attendance=await api('/api/workflow/team-month/'+yr+'/'+mo).catch(()=>({rows:[]}));
  $('#content').innerHTML='<div class="stats"><div class="stat"><div class="stat-icon">▣</div><div class="value">'+pending.length+'</div><small>Čakajúce schválenia</small></div><div class="stat"><div class="stat-icon">♙</div><div class="value">'+new Set(list.map(x=>x.employee_id)).size+'</div><small>Ľudia so žiadosťami</small></div></div><div class="panel"><div class="section-top"><h3>Žiadosti tímu</h3><button class="primary" data-go="requests">Otvoriť schvaľovanie</button></div><p class="muted">Zobrazené sú len žiadosti priamo priradených podriadených. Vlastné žiadosti sa nedajú schváliť.</p>'+ (pending.length?'<div class="scroll"><table><thead><tr><th>Zamestnanec</th><th>Druh</th><th>Od</th><th>Do</th></tr></thead><tbody>'+pending.map(x=>'<tr><td>'+esc(x.employee_name)+'</td><td>'+esc(x.kind)+'</td><td>'+esc(x.start)+'</td><td>'+esc(x.end)+'</td></tr>').join('')+'</tbody></table></div>':'<p class="empty">Žiadne otvorené žiadosti.</p>')+'</div>';
+ $('#content').insertAdjacentHTML('beforeend','<div class="panel"><div class="section-top"><div><h3>Potvrdenie dochádzky tímu</h3><span class="muted">Kontrola zamestnanca → potvrdenie vedúceho → mesačná uzávierka HR</span></div></div><div class="scroll"><table><thead><tr><th>Zamestnanec</th><th>Stav</th><th>Akcia</th></tr></thead><tbody>'+attendance.rows.map(r=>'<tr><td>'+esc(r.name)+'</td><td>'+esc(r.status.status)+'</td><td>'+(r.status.status==='reviewed'?'<button class="primary mini" data-team-confirm="'+r.employee_id+'">Potvrdiť</button>':'—')+'</td></tr>').join('')+'</tbody></table></div></div>');
+ document.querySelectorAll('[data-team-confirm]').forEach(x=>x.onclick=async()=>{if(!confirm('Potvrdiť skontrolovanú dochádzku?'))return;try{await api('/api/workflow/confirm',{method:'POST',body:JSON.stringify({employee_id:Number(x.dataset.teamConfirm),year:yr,month:mo,note:'Potvrdenie vedúcim'})});toast('Dochádzka tímu potvrdená');managerDashboard()}catch(e){toast(e.message,true)}});
+
 }
 async function managerRequests(){
  const list=await api('/api/team/absences');
