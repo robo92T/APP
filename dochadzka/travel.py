@@ -31,6 +31,12 @@ MEAL_SOURCES=[
     "https://www.slov-lex.sk/ezbierky/pravne-predpisy/SK/ZZ/2001/311/"
 ]
 def money(amount):return Decimal(amount).quantize(Decimal("0.01"),rounding=ROUND_CEILING)
+def safe_csv_cell(value):
+    # Prevent spreadsheet formula injection in exported employee names and free text.
+    if isinstance(value,str) and value.startswith(("=","+","-","@","\\t","\\r","\\n")):
+        return "'"+value
+    return value
+
 def applicable_rates(day):
     found=[item for item in RATES if day>=item[0]]
     if not found:raise ValueError("Chýba overená zákonná sadzba pre zvolený dátum.")
@@ -289,10 +295,11 @@ def install(app,Base,Employee,Event,Absence,Shift,engine,db,require_role,audit,i
             "Minimálna hodnota poukážky EUR","Minimálny príspevok zamestnávateľa EUR","Poznámka"])
         for person in calculated["employees"]:
             for day in person["days"]:
-                writer.writerow([person["name"],day["day"],day["worked_minutes"],
+                writer.writerow([safe_csv_cell(value) for value in [
+                    person["name"],day["day"],day["worked_minutes"],
                     day["planned_minutes"],day["trip_minutes"],day["meal_ticket_status"],
                     day["tickets"],day["trip_meal_eur"],day["ticket_min_value_eur"],
-                    day["employer_min_eur"],day["note"]])
+                    day["employer_min_eur"],day["note"]]])
         payload=("\ufeff"+buf.getvalue()).encode("utf-8")
         return StreamingResponse(iter([payload]),media_type="text/csv; charset=utf-8",
             headers={"Cache-Control":"no-store",
@@ -305,9 +312,10 @@ def install(app,Base,Employee,Event,Absence,Shift,engine,db,require_role,audit,i
         w.writerow(["ID","Zamestnanec","Účel","Miesto","Začiatok","Koniec","Stav","Stravné EUR",
                     "Kilometrovné EUR","Palivo EUR","Ostatné náhrady EUR","Náhrady EUR","Preddavok EUR","Doplatok EUR"])
         for x in items:
-            w.writerow([x["id"],x["employee_name"],x["purpose"],x["destination"],x["starts_at"],
+            w.writerow([safe_csv_cell(value) for value in [
+                x["id"],x["employee_name"],x["purpose"],x["destination"],x["starts_at"],
                 x["ends_at"],x["status"],x["meal_allowance_eur"],x["mileage_eur"],x["fuel_eur"],
-                x["expenses_eur"],x["travel_total_eur"],x["advance_eur"],x["to_pay_eur"]])
+                x["expenses_eur"],x["travel_total_eur"],x["advance_eur"],x["to_pay_eur"]]])
         return StreamingResponse(iter([("\ufeff"+buf.getvalue()).encode("utf-8")]),media_type="text/csv; charset=utf-8",
             headers={"Cache-Control":"no-store","Content-Disposition":'attachment; filename="bid_sluzobne_cesty.csv"'})
     return TravelOrder,TravelMeal
