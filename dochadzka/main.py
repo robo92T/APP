@@ -109,8 +109,13 @@ def health():
         with engine.connect() as connection: connection.execute(text("SELECT 1"))
     except Exception:
         raise HTTPException(503,"Databáza nie je dostupná")
-    return {"status":"ok","database":"postgresql" if DATABASE_IS_PERSISTENT and not DB_URL.startswith("sqlite") else "sqlite",
+    response={"status":"ok","database":"postgresql" if DATABASE_IS_PERSISTENT and not DB_URL.startswith("sqlite") else "sqlite",
             "persistent":DATABASE_IS_PERSISTENT}
+    if os.getenv("APP_ENV")=="preview" and os.getenv("DEMO_SEED")=="10":
+        with SessionLocal() as session:
+            response["demo_employees"]=session.scalar(select(__import__("sqlalchemy").func.count(Employee.id)))
+            response["demo_mode"]=True
+    return response
 @app.get("/api/employees", dependencies=[Depends(admin)])
 def employees(db: Session = Depends(db)):
     return [{"id":e.id,"name":e.name,"weekly_minutes":e.weekly_minutes,"work_days":e.work_days,"annual_leave_weeks":e.annual_leave_weeks,"start_date":e.start_date,"active":e.active} for e in db.scalars(select(Employee)).all()]
