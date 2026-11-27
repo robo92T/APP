@@ -159,7 +159,8 @@ def install(app, Base, Employee, engine, db, require_role, audit):
         if account.role in ("admin","hr"):
             employee_ids=[e.id for e in session.scalars(select(Employee)).all()]
         elif account.employee_id is not None:
-            employee_ids=[p.employee_id for p in session.scalars(select(Profile).where(Profile.manager_id==account.employee_id)).all()]
+            from organization import direct_or_tree_report_ids
+            employee_ids=list(direct_or_tree_report_ids(session,account.employee_id))
         else:
             employee_ids=[]
         if not employee_ids:return []
@@ -179,8 +180,9 @@ def install(app, Base, Employee, engine, db, require_role, audit):
         if is_closed_range(session,item.start,item.end):raise HTTPException(409,"Obdobie je uzavreté")
         if account.role=="manager":
             if account.employee_id is None:raise HTTPException(403,"Vedúci nie je priradený zamestnancovi")
-            p=session.get(Profile,item.employee_id)
-            if p is None or p.manager_id!=account.employee_id:raise HTTPException(403,"Žiadosť nepatrí podriadenému")
+            from organization import direct_or_tree_report_ids
+            if item.employee_id not in direct_or_tree_report_ids(session,account.employee_id):
+                raise HTTPException(403,"Žiadosť nepatrí podriadenému")
         item.status="approved" if decision=="approve" else "rejected"
         audit(session,account.username,f"absence.{decision}",str(item.id))
         session.commit()
