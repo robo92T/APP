@@ -36,7 +36,9 @@ def applicable_rates(day):
     if not found:raise ValueError("Chýba overená zákonná sadzba pre zvolený dátum.")
     return found[-1]
 def to_utc(value):
-    if value.tzinfo is None:raise ValueError("Dátum cesty musí obsahovať časové pásmo")
+    # Database drivers, especially SQLite, may drop UTC tzinfo on roundtrip.
+    # User input itself is validated as offset-aware before persistence.
+    if value.tzinfo is None:value=value.replace(tzinfo=timezone.utc)
     return value.astimezone(timezone.utc)
 def daily_intervals(start,end):
     cursor=to_utc(start);stop=to_utc(end)
@@ -132,7 +134,7 @@ def install(app,Base,Employee,Event,Absence,Shift,engine,db,require_role,audit,i
         mileage=Decimal(0);fuel=Decimal(0)
         warnings=[]
         if t.transport=="private_car":
-            if t.starts_at.astimezone(TZ).date()<date(2026,1,1):
+            if to_utc(t.starts_at).astimezone(TZ).date()<date(2026,1,1):
                 warnings.append("Kilometrová sadzba pred 1.1.2026 nie je v systéme overená.")
             else:mileage=Decimal(t.private_car_km)*CAR_PER_KM_2026
             fuel=Decimal(t.private_car_km)*Decimal(t.fuel_l_per_100km)*Decimal(t.fuel_price_eur_l)/100
@@ -153,6 +155,8 @@ def install(app,Base,Employee,Event,Absence,Shift,engine,db,require_role,audit,i
             "warnings":warnings,
             "note_calculation":"Orientačné tuzemské náhrady. Čas pracovnej cesty nie je automaticky odpracovaným časom."}
     def ensure_valid(payload,session):
+        if payload.starts_at.tzinfo is None or payload.ends_at.tzinfo is None:
+            raise HTTPException(422,"Uveď časové pásmo pri začiatku aj konci pracovnej cesty")
         start=to_utc(payload.starts_at);end=to_utc(payload.ends_at)
         if end<=start or end-start>timedelta(days=31):raise HTTPException(422,"Neplatná dĺžka cesty (max. 31 dní)")
         employee=session.get(Employee,payload.employee_id)
@@ -206,7 +210,7 @@ def install(app,Base,Employee,Event,Absence,Shift,engine,db,require_role,audit,i
         t=session.get(TravelOrder,trip_id)
         if not t:raise HTTPException(404,"Cesta neexistuje")
         if t.status=="cancelled":raise HTTPException(409,"Cesta je už zrušená")
-        if is_closed_range(session,t.starts_at.astimezone(TZ).date(),t.ends_at.astimezone(TZ).date()):
+        if is_closed_range(session,to_utc(t.starts_at).astimezone(TZ).date(),to_utc(t.ends_at).astimezone(TZ).date()):
             raise HTTPException(409,"Cesta patrí do uzavretého obdobia")
         t.status="cancelled"
         audit(session,actor.username,"travel.cancel",f"{t.id}:{data.reason[:200]}")
