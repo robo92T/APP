@@ -100,3 +100,17 @@ body{background:#edf3fa}
 #content .primary:hover{background:#194e8f}
 #content .field input:focus,#content .field select:focus,#content .field textarea:focus{
  border-color:#f0c532;box-shadow:0 0 0 3px #f0c53235;outline:0}
+
+/* Official legal-source monitoring, audit and admin review */
+.legal-notice-banner{margin:18px 39px 0;padding:13px 17px;border-radius:12px;
+ border:1px solid #e8d596;background:#fff9e6;color:#644b19;
+ display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap}
+.legal-notice-banner.hidden{display:none!important}
+.legal-notice{border:1px solid #e0e7f2;border-radius:13px;padding:17px;margin:12px 0;
+ background:#fff}
+.legal-notice .section-top{display:flex;justify-content:space-between;align-items:center}
+.legal-diff{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:12px;
+ line-height:1.55;white-space:pre-wrap;overflow-wrap:anywhere;max-height:230px;
+ overflow:auto;padding:14px;background:#f4f6fb;border:1px solid #e1e8f2;
+ border-radius:9px;color:#243f63}
+@media(max-width:700px){.legal-notice-banner{margin:12px 17px 0}.legal-notice{padding:12px}}
