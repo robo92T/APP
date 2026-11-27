@@ -395,6 +395,9 @@ install_backup_worker(app,Base,engine,db,require_role,audit,DATABASE_IS_PERSISTE
 from group_report import install as install_group_report
 install_group_report(app,Employee,Event,Absence,Shift,Base,db,require_role)
 
+from aktion_workflows import install as install_aktion_workflows
+install_aktion_workflows(app,Base,Employee,Absence,engine,db,current_account,require_role,audit,is_closed_range)
+
 # Explicitly-gated fake preview dataset. No seed on any production/PostgreSQL DB.
 from demo_seed import seed_preview
 seed_preview(Base,engine,Employee,Event,Absence,Shift,audit)
