@@ -42,6 +42,14 @@ def install(app, Base, Employee, engine, db, audit):
         employee_id:Mapped[Optional[int]]=mapped_column(ForeignKey("employee.id"),nullable=True)
         active:Mapped[bool]=mapped_column(Boolean,default=True)
     Base.metadata.create_all(engine)
+    # First-run bootstrap, only when explicitly configured by deployer.
+    bootstrap_user=os.getenv("BOOTSTRAP_ADMIN_USERNAME","").strip()
+    bootstrap_password=os.getenv("BOOTSTRAP_ADMIN_PASSWORD","")
+    if bootstrap_user and len(bootstrap_password)>=12:
+        with next(db()) as session:
+            if session.scalar(select(Account).limit(1)) is None:
+                session.add(Account(username=bootstrap_user,password_hash=make_hash(bootstrap_password),role="admin"))
+                session.commit()
     secret=os.getenv("AUTH_SECRET","")
     def current(request:Request,session:Session=Depends(db)):
         bearer=request.headers.get("Authorization","")
