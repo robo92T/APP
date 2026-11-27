@@ -9,7 +9,7 @@ import holidays
 from legal_calendar import is_workday
 from fastapi import FastAPI, Depends, Header, HTTPException, Query, Request
 from pydantic import BaseModel, Field
-from sqlalchemy import create_engine, String, Integer, DateTime, Date, ForeignKey, Boolean, select
+from sqlalchemy import create_engine, String, Integer, DateTime, Date, ForeignKey, Boolean, select, text
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, Session, sessionmaker
 
 DB_URL = os.getenv("DATABASE_URL", "sqlite:///./attendance.db")
@@ -204,6 +204,7 @@ def punch(data: PunchRequest, db: Session = Depends(db)):
 def add_absence(data: AbsenceCreate, db: Session = Depends(db)):
     if data.kind not in KINDS: raise HTTPException(400,"Neznámy druh neprítomnosti")
     if data.end < data.start: raise HTTPException(400,"Koniec pred začiatkom")
+    if is_closed_range(db,data.start,data.end): raise HTTPException(409,"Zvolené obdobie obsahuje uzavretý mesiac")
     if not db.get(Employee,data.employee_id): raise HTTPException(404,"Zamestnanec neexistuje")
     a=Absence(**data.model_dump());
     if a.kind in ("sick","ocr"): a.status="approved"
@@ -213,6 +214,7 @@ def add_absence(data: AbsenceCreate, db: Session = Depends(db)):
 def approve(absence_id:int, db:Session=Depends(db)):
     a=db.get(Absence,absence_id)
     if not a: raise HTTPException(404,"Neprítomnosť neexistuje")
+    if is_closed_range(db,a.start,a.end):raise HTTPException(409,"Zvolené obdobie je uzavreté")
     if a.status != "pending":raise HTTPException(409,"Žiadosť už nie je v stave čaká")
     a.status="approved";audit(db,"admin","absence.approve",str(a.id));db.commit()
     return {"status":a.status}
@@ -220,6 +222,7 @@ def approve(absence_id:int, db:Session=Depends(db)):
 def reject_absence(absence_id:int,db:Session=Depends(db)):
     a=db.get(Absence,absence_id)
     if not a:raise HTTPException(404,"Neprítomnosť neexistuje")
+    if is_closed_range(db,a.start,a.end):raise HTTPException(409,"Zvolené obdobie je uzavreté")
     if a.status!="pending":raise HTTPException(409,"Žiadosť už nie je v stave čaká")
     a.status="rejected"
     audit(db,"admin","absence.reject",str(a.id))
@@ -231,6 +234,14 @@ def absences(employee_id:Optional[int]=None,year:Optional[int]=None,db:Session=D
     if employee_id: q=q.where(Absence.employee_id==employee_id)
     if year:q=q.where(Absence.start<=date(year,12,31),Absence.end>=date(year,1,1))
     return [{"id":a.id,"employee_id":a.employee_id,"kind":a.kind,"start":a.start,"end":a.end,"minutes":a.minutes,"status":a.status,"note":a.note} for a in db.scalars(q).all()]
+def is_closed_range(session:Session,start:date,end:date)->bool:
+    d=date(start.year,start.month,1)
+    while d<=end:
+        if session.execute(text("SELECT 1 FROM month_close WHERE year=:year AND month=:month"),{"year":d.year,"month":d.month}).first():
+            return True
+        d=date(d.year+1,1,1) if d.month==12 else date(d.year,d.month+1,1)
+    return False
+
 def working_dates(start:date,end:date):
     day=start
     while day<=end:
@@ -309,7 +320,7 @@ if STATIC_DIR.is_dir():
     def service_worker(): return FileResponse(STATIC_DIR / "sw.js",media_type="application/javascript",headers={"Service-Worker-Allowed":"/","Cache-Control":"no-cache"})
 
 from scheduling import install as install_scheduling
-install_scheduling(app,Base,Employee,Event,Absence,engine,db,admin,audit)
+Shift=install_scheduling(app,Base,Employee,Event,Absence,engine,db,admin,audit)
 
 from mobile_api import install as install_mobile_api
 install_mobile_api(app,Employee,Event,Absence,db,_current_account,audit)
@@ -319,3 +330,6 @@ install_hr_profiles(app,Base,Employee,engine,db,require_role,audit)
 
 from pdf_reports import install as install_pdf_reports
 install_pdf_reports(app,Employee,Event,Absence,db,require_role,_current_account)
+
+from payroll import install as install_payroll
+MonthClose=install_payroll(app,Base,Employee,Absence,engine,db,require_role,audit,__import__("pdf_reports").build_rows,Event,Shift)
