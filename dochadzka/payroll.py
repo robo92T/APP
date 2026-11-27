@@ -59,7 +59,7 @@ def install(app,Base,Employee,Absence,engine,db,require_role,audit,build_rows,Ev
         for employee in session.scalars(select(Employee).order_by(Employee.name)).all():
             events=session.scalars(select(Event).where(Event.employee_id==employee.id,Event.at>=from_time,Event.at<until_time).order_by(Event.at,Event.id)).all()
             absences=session.scalars(select(Absence).where(Absence.employee_id==employee.id,Absence.status=="approved",Absence.start<=end,Absence.end>=start)).all()
-            shifts={s.day:s.planned_minutes for s in session.scalars(select(Shift).where(Shift.employee_id==employee.id,Shift.day>=start,Shift.day<=end)).all()}
+            shifts={s.day:s for s in session.scalars(select(Shift).where(Shift.employee_id==employee.id,Shift.day>=start-timedelta(days=1),Shift.day<=end)).all()}
             rows=build_rows(employee,events,shifts,absences,year,month)
             plan=sum(x["plan"] for x in rows);work=sum(x["worked"] for x in rows);credited=sum(x["credit"] for x in rows)
             categories=calculate(events,start,end)
