@@ -1,0 +1,17 @@
+# IBA DEMO / NÁHĽAD – na free pláne SQLite stráca dáta pri reštarte.
+services:
+  - type: web
+    name: bid-dochadzka-preview
+    runtime: docker
+    region: frankfurt
+    plan: free
+    branch: main
+    dockerfilePath: ./deploy/Dockerfile
+    dockerContext: .
+    healthCheckPath: /api/health
+    autoDeployTrigger: commit
+    envVars:
+      - key: BID_DB
+        value: /app/data/dochadzka.db
+      - key: TZ
+        value: Europe/Bratislava

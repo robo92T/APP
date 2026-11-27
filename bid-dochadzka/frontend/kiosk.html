@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+  <meta name="theme-color" content="#0b2d5b">
+  <meta name="mobile-web-app-capable" content="yes">
+  <title>BID – terminál dochádzky</title>
+  <link rel="manifest" href="/static/manifest.webmanifest">
+  <link rel="stylesheet" href="/static/kiosk.css">
+</head>
+<body>
+  <div class="k">
+    <section class="left">
+      <div class="brand"><div class="mark">BID</div><div>Bratislavská integrovaná doprava</div></div>
+      <div class="time" id="time"></div>
+      <div class="date" id="date"></div>
+      <div class="foot"><span id="dev"></span><span class="net" id="net"><i></i><span>online</span></span></div>
+    </section>
+    <section class="right" id="right"></section>
+  </div>
+  <div class="queue" id="queue" style="display:none"></div>
+  <input id="uid" autocomplete="off" inputmode="none" aria-label="UID čipu">
+  <script src="/static/kiosk.js"></script>
+</body>
+</html>

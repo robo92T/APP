@@ -1,0 +1,12 @@
+__pycache__/
+.pytest_cache/
+*.py[cod]
+.venv/
+.env
+.env.*
+*.db
+*.db-wal
+*.db-shm
+data/
+deploy/certs/
+deploy/backups/

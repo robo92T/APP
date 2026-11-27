@@ -1,0 +1,17 @@
+# Alternatíva bez Dockeru (Linux server): /etc/systemd/system/bid-dochadzka.service
+[Unit]
+Description=BID Dochadzka
+After=network.target
+
+[Service]
+User=dochadzka
+WorkingDirectory=/opt/bid-dochadzka
+Environment=BID_DB=/var/lib/bid-dochadzka/dochadzka.db
+ExecStart=/opt/bid-dochadzka/.venv/bin/uvicorn backend.app:app --host 127.0.0.1 --port 8000 --proxy-headers
+Restart=always
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=/var/lib/bid-dochadzka
+
+[Install]
+WantedBy=multi-user.target

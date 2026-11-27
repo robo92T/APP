@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: bid-dochadzka
+    runtime: docker
+    region: frankfurt
+    plan: free
+    branch: feature/bid-dochadzka
+    dockerfilePath: ./bid-dochadzka/deploy/Dockerfile
+    dockerContext: ./bid-dochadzka
+    healthCheckPath: /api/health
+    envVars:
+      - key: TZ
+        value: Europe/Bratislava
+      - key: BID_DB
+        value: /app/data/dochadzka.db

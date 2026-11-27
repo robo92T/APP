@@ -1,0 +1,16 @@
+.git
+.gitignore
+__pycache__/
+.pytest_cache/
+*.pyc
+*.db
+*.db-wal
+*.db-shm
+.env
+.env.*
+data/
+docs/
+tests/
+deploy/certs/
+deploy/backups/
+*.zip
