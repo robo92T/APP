@@ -75,6 +75,24 @@ def install(app,Base,Employee,Absence,engine,db,current_account,require_role,aud
                       "reviewed_by":None,"confirmed_by":None,"note":""}}
                 for p in people if p.start_date<=date(year,month,monthrange(year,month)[1]) and
                     (p.end_date is None or p.end_date>=date(year,month,1))]}
+    @app.get("/api/workflow/team-month/{year}/{month}")
+    def team_month(year:int,month:int,account=Depends(current_account),session:Session=Depends(db)):
+        if account.role not in ("manager","admin","hr"):
+            raise HTTPException(403,"Len vedúci alebo HR")
+        if not 2020<=year<=2100 or not 1<=month<=12:raise HTTPException(422,"Neplatné obdobie")
+        if account.role=="manager":
+            from organization import direct_or_tree_report_ids
+            ids=direct_or_tree_report_ids(session,account.employee_id)
+        else:
+            ids={x.id for x in session.scalars(select(Employee)).all()}
+        people=session.scalars(select(Employee).where(Employee.id.in_(ids)).order_by(Employee.name)).all() if ids else []
+        entries={x.employee_id:x for x in session.scalars(select(EmployeeMonthReview).where(
+            EmployeeMonthReview.year==year,EmployeeMonthReview.month==month)).all()}
+        return {"year":year,"month":month,"rows":[{"employee_id":p.id,"name":p.name,
+                "status":serialize(entries[p.id]) if p.id in entries
+                else {"status":"pending","reviewed_at":None,"confirmed_at":None}}
+                for p in people if p.start_date<=date(year,month,monthrange(year,month)[1])
+                and (p.end_date is None or p.end_date>=date(year,month,1))]}
     @app.get("/api/workflow/my-month")
     def my_status(year:int=Query(ge=2020,le=2100),month:int=Query(ge=1,le=12),
         account=Depends(current_account),session:Session=Depends(db)):
