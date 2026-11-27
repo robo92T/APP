@@ -201,6 +201,8 @@ if STATIC_DIR.is_dir():
     app.mount("/assets", StaticFiles(directory=str(STATIC_DIR)), name="assets")
     @app.get("/", include_in_schema=False)
     def home(): return FileResponse(STATIC_DIR / "index.html")
+    @app.head("/", include_in_schema=False)
+    def home_head(): return FileResponse(STATIC_DIR / "index.html")
 
 from scheduling import install as install_scheduling
 install_scheduling(app,Base,Employee,Event,Absence,engine,db,admin,audit)
