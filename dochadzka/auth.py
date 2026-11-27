@@ -103,8 +103,9 @@ def install(app, Base, Employee, engine, db, audit):
         audit(session,account.username,"password.change","self");session.commit()
         return {"success":True}
     @app.post("/api/auth/accounts")
-    def create_account(payload:Credentials,role:str="employee",employee_id:Optional[int]=None,account=Depends(require_role("admin")),session:Session=Depends(db)):
+    def create_account(payload:Credentials,role:str="employee",employee_id:Optional[int]=None,account=Depends(require_role("admin","hr")),session:Session=Depends(db)):
         if role not in {"admin","hr","manager","employee","auditor"}:raise HTTPException(400,"Neplatná rola")
+        if role=="admin" and account.role!="admin":raise HTTPException(403,"Rolu admin smie prideľovať len admin")
         if session.scalar(select(Account).where(Account.username==payload.username)):raise HTTPException(409,"Používateľ existuje")
         if employee_id and not session.get(Employee,employee_id):raise HTTPException(404,"Zamestnanec neexistuje")
         user=Account(username=payload.username,password_hash=make_hash(payload.password),role=role,employee_id=employee_id)
