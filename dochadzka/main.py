@@ -7,7 +7,7 @@ from typing import Optional
 from zoneinfo import ZoneInfo
 import holidays
 from legal_calendar import is_workday
-from fastapi import FastAPI, Depends, Header, HTTPException, Query
+from fastapi import FastAPI, Depends, Header, HTTPException, Query, Request
 from pydantic import BaseModel, Field
 from sqlalchemy import create_engine, String, Integer, DateTime, Date, ForeignKey, Boolean, select
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, Session, sessionmaker
@@ -57,10 +57,11 @@ class Audit(Base):
 Base.metadata.create_all(engine)
 def db():
     with SessionLocal() as session: yield session
-def admin(x_admin_key: Optional[str] = Header(None)):
-    key = os.getenv("ADMIN_API_KEY")
-    if not key or not secrets.compare_digest(x_admin_key or "", key):
-        raise HTTPException(401, "Neplatný administrátorský kľúč")
+def admin(request: Request, session: Session = Depends(db)):
+    user = _current_account(request, session)
+    if user.role not in ('admin','hr','manager','auditor'):
+        raise HTTPException(403, 'Nedostatočné oprávnenie')
+    return user
 def terminal(x_terminal_key: Optional[str] = Header(None)):
     key = os.getenv("TERMINAL_API_KEY")
     if not key or not secrets.compare_digest(x_terminal_key or "", key):
@@ -187,3 +188,16 @@ def timesheet(employee_id:int,start:date,end:date,db:Session=Depends(db)):
 @app.get("/api/audit", dependencies=[Depends(admin)])
 def audits(limit:int=Query(default=100,ge=1,le=500),db:Session=Depends(db)):
     return [{"at":x.at,"actor":x.actor,"action":x.action,"detail":x.detail} for x in db.scalars(select(Audit).order_by(Audit.id.desc()).limit(limit)).all()]
+
+# Authentication and frontend are installed after the database and route models.
+from auth import install as install_auth
+Account, _current_account, require_role = install_auth(app, Base, Employee, engine, db, audit)
+
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+from pathlib import Path
+STATIC_DIR = Path(__file__).parent / "frontend"
+if STATIC_DIR.is_dir():
+    app.mount("/assets", StaticFiles(directory=str(STATIC_DIR)), name="assets")
+    @app.get("/", include_in_schema=False)
+    def home(): return FileResponse(STATIC_DIR / "index.html")
