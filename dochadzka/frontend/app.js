@@ -9,7 +9,7 @@ async function init(){if(!token){logout();return}try{currentUser=await api('/api
 async function refreshEmployees(){try{employees=await api('/api/employees')}catch(e){employees=[];toast(e.message,true)}}
 const choose=(id='empSelect')=>'<select id="'+id+'">'+employees.map(e=>'<option value="'+e.id+'">'+esc(e.name)+'</option>').join('')+'</select>';
 function head(title){$('#pageTitle').textContent=title;$('#breadcrumb').textContent=title.toUpperCase();document.querySelectorAll('.nav').forEach(x=>x.classList.toggle('active',x.dataset.view===view))}
-async function navigate(name){if(currentUser?.must_change_password)name='accounts';if(['employee','manager','auditor'].includes(currentUser?.role)&&!['dashboard','requests','accounts'].includes(name)){name='dashboard'}view=name;const map={dashboard:'Prehľad dochádzky',employees:'Zamestnanci',organization:'Organizačná štruktúra',exports:'Exportné profily',quality:'Kontrola dochádzky',corrections:'Opravy záznamov',legal:'Zákonné nároky',legalMonitor:'Monitor legislatívy',requests:'Neprítomnosti',shifts:'Rozpis zmien',reports:'Výkazy a saldo',terminal:'Dochádzkové terminály',payroll:'Uzávierka a export',accounts:'Používateľské účty',holidays:'Sviatky Slovenskej republiky'};head(map[name]||'Dochádzka');try{await ({dashboard,employeesView,organizationView,exportProfilesView,qualityView,correctionsView,legalView,legalMonitorView,requests,shifts,reports,terminal,accounts,holidaysView,payrollView}[{dashboard:'dashboard',employees:'employeesView',organization:'organizationView',exports:'exportProfilesView',quality:'qualityView',corrections:'correctionsView',legal:'legalView',legalMonitor:'legalMonitorView',requests:'requests',shifts:'shifts',reports:'reports',terminal:'terminal',payroll:'payrollView',accounts:'accounts',holidays:'holidaysView'}[name]])()}catch(e){$('#content').innerHTML='<div class="error">'+esc(e.message)+'</div>';toast(e.message,true)}}
+async function navigate(name){if(currentUser?.must_change_password)name='accounts';if(['employee','manager','auditor'].includes(currentUser?.role)&&!['dashboard','requests','accounts'].includes(name)){name='dashboard'}view=name;const map={dashboard:'Prehľad dochádzky',groupReport:'Hromadný výkaz dochádzky',employees:'Zamestnanci',organization:'Organizačná štruktúra',exports:'Exportné profily',quality:'Kontrola dochádzky',corrections:'Opravy záznamov',legal:'Zákonné nároky',legalMonitor:'Monitor legislatívy',requests:'Neprítomnosti',shifts:'Rozpis zmien',reports:'Výkazy a saldo',terminal:'Dochádzkové terminály',payroll:'Uzávierka a export',accounts:'Používateľské účty',holidays:'Sviatky Slovenskej republiky'};head(map[name]||'Dochádzka');try{await ({dashboard,groupReportView,employeesView,organizationView,exportProfilesView,qualityView,correctionsView,legalView,legalMonitorView,requests,shifts,reports,terminal,accounts,holidaysView,payrollView}[{dashboard:'dashboard',groupReport:'groupReportView',employees:'employeesView',organization:'organizationView',exports:'exportProfilesView',quality:'qualityView',corrections:'correctionsView',legal:'legalView',legalMonitor:'legalMonitorView',requests:'requests',shifts:'shifts',reports:'reports',terminal:'terminal',payroll:'payrollView',accounts:'accounts',holidays:'holidaysView'}[name]])()}catch(e){$('#content').innerHTML='<div class="error">'+esc(e.message)+'</div>';toast(e.message,true)}}
 async function employeePasswordView(){
 $('#content').innerHTML='<div class="panel"><h3>Zmeniť heslo</h3><form id="selfPassword"><label class="field"><span>Aktuálne heslo</span><input type="password" name="old_password" autocomplete="current-password" required></label><label class="field"><span>Nové heslo (min. 12 znakov)</span><input type="password" name="new_password" autocomplete="new-password" minlength="12" required></label><button class="primary">Uložiť nové heslo</button></form></div>';
 const mfaBox=document.createElement('div');mfaBox.className='panel';mfaBox.innerHTML='<h3>Bezpečnosť účtu</h3><button class="secondary" id="enableMfa">Zapnúť dvojfaktorové overenie</button><div id="mfaSetupPanel"></div>';$('#content').append(mfaBox);$('#enableMfa').onclick=setupMfa;
@@ -356,4 +356,108 @@ async function refreshLegalNoticeBanner(){
    if(count)banner.innerHTML='<strong>Legislatívna kontrola: '+count+' nové upozornenia</strong><span>Pravidlá sa bez schválenia nemenia.</span><button id="reviewLegalAlerts" class="secondary mini">Zobraziť návrhy</button>';
    if(count)$('#reviewLegalAlerts').onclick=()=>navigate('legalMonitor');
  }catch{banner.classList.add('hidden')}
+}
+
+
+let groupReportState={mode:'day',day:localDate(),month:localDate().slice(0,7),
+    department:'all',status:'all',search:'',sortKey:'name',sortDesc:false,selectedEmployee:null};
+
+function groupReportHour(minutes,signed=false){
+ const n=Number(minutes||0),abs=Math.abs(n);
+ return (signed&&n>0?'+':n<0?'−':'')+String(Math.floor(abs/60)).padStart(2,'0')+':'+String(abs%60).padStart(2,'0');
+}
+function groupStatusLabel(state){
+ const s=state==='present'?'Prítomný':state==='break'?'Prestávka':state==='absent'?'Neprítomnosť':state==='away'?'Mimo / odpracované':'Bez záznamu';
+ return s;
+}
+async function groupReportView(){
+ const st=groupReportState;
+ $('#content').innerHTML='<div class="group-report"><div class="panel group-report-toolbar"><div class="section-top"><div><h3>Hromadný výkaz dochádzky</h3><span class="muted">Všetci zamestnanci na jednom mieste · denné pípnutia a mesačné časové zložky</span></div><div class="actions"><button id="grCsv" class="secondary"><span>⇩</span> CSV</button><button id="grXlsx" class="primary"><span>▤</span> Excel</button></div></div><div class="group-report-filter-row"><div class="group-report-toggle"><button id="grDay" class="'+(st.mode==='day'?'selected':'')+'">Denná dochádzka</button><button id="grMonth" class="'+(st.mode==='month'?'selected':'')+'">Mesačný hromadný výkaz</button></div><label class="field"><span>Obdobie</span><input id="grDate" type="'+(st.mode==='day'?'date':'month')+'" value="'+esc(st.mode==='day'?st.day:st.month)+'"></label><label class="field"><span>Útvar</span><select id="grDept"><option value="all">Všetky útvary</option></select></label><label class="field"><span>Stav</span><select id="grStatus"><option value="all">Všetky stavy</option>'+(st.mode==='day'?'<option value="present">Prítomní</option><option value="break">Na prestávke</option><option value="absent">Neprítomnosti</option><option value="away">Mimo / odpracované</option><option value="unrecorded">Bez záznamu</option>':'<option value="errors">S upozorneniami</option><option value="hours">S odpracovanými hodinami</option>')+'</select></label><label class="field gr-search"><span>Hľadať</span><input id="grSearch" placeholder="Meno, osobné číslo, pozícia…" value="'+esc(st.search)+'"></label><button class="secondary" id="grRefresh">Obnoviť</button></div><div class="group-report-legend"><span>● Časy sú z evidovaných RFID záznamov</span><span>● Saldo a zložky sú informatívne</span><span>● Kliknutím na zamestnanca otvoríš detail</span></div></div><div id="grStats" class="group-report-stats"></div><div class="panel group-report-table-panel"><div class="section-top"><div><h3 id="grTableTitle">Prehľad zamestnancov</h3><p class="subtle" id="grCount"></p></div><span class="muted">↔ Tabuľku možno posúvať vodorovne</span></div><div id="grTable" class="group-report-scroll"></div><div id="grTableTotals"></div></div><div class="panel"><div class="notice" id="grDisclaimer">Načítavam údaje…</div></div><div id="grDetail"></div></div>';
+ const dateLabel=()=>st.mode==='day'?st.day:st.month;
+ const params=()=>st.mode==='day'?'mode=day&day='+encodeURIComponent(st.day):
+     'mode=month&year='+encodeURIComponent(st.month.split('-')[0])+'&month='+encodeURIComponent(st.month.split('-')[1]);
+ let dataset=null;
+ const render=()=>{
+  if(!dataset)return;
+  const rows=dataset.rows||[],fields=dataset.columns||[];
+  const departments=[...new Set(rows.map(r=>r.department||'Bez útvaru'))].sort((a,b)=>a.localeCompare(b,'sk'));
+  $('#grDept').innerHTML='<option value="all">Všetky útvary</option>'+departments.map(d=>'<option value="'+esc(d)+'">'+esc(d)+'</option>').join('');
+  if(departments.includes(st.department))$('#grDept').value=st.department;
+  else{st.department='all';$('#grDept').value='all'}
+  $('#grStatus').value=st.status;
+  $('#grDisclaimer').textContent=dataset.note;
+  const q=st.search.toLocaleLowerCase('sk-SK').trim();
+  const shown=rows.filter(r=>(st.department==='all'||(r.department||'Bez útvaru')===st.department)&&
+    (st.status==='all'||(st.mode==='day'?r.status_key===st.status:st.status==='errors'?Number(r.warnings)>0:Number(r.worked_min)>0))&&
+    (!q||[r.name,r.personal_number,r.department,r.job_title,r.component].some(v=>String(v||'').toLocaleLowerCase('sk-SK').includes(q))));
+  const fieldMap={date:'Dátum',personal_number:'Os. č.',name:'Zamestnanec',department:'Útvar',job_title:'Pozícia',status:'Stav',first_in:'Príchod',last_out:'Odchod',last_punch:'Posledné pípnutie',planned_min:'Fond',worked_min:'Odpracované',break_min:'Prestávka',credited_min:'Uznané voľno',saldo_min:'Saldo',component:'Zložka / neprítomnosť',warnings:'Kontrola',
+    presence:'Aktuálny stav',vacation_min:'Dovolenka',doctor_min:'Lekár',accompany_min:'Sprevádzanie',other_absence_min:'Ostatné voľno',night_min:'Nočná práca',saturday_min:'Sobota',sunday_min:'Nedeľa',holiday_min:'Sviatok',attendance_days:'Pracovné dni'};
+  const columns=st.mode==='day'?['personal_number','name','department','job_title','status','first_in','last_out','planned_min','worked_min','break_min','credited_min','saldo_min','component','warnings']:
+    ['personal_number','name','department','presence','planned_min','worked_min','break_min','credited_min','saldo_min','vacation_min','doctor_min','accompany_min','other_absence_min','night_min','saturday_min','sunday_min','holiday_min','attendance_days','warnings'];
+  const sorted=[...shown].sort((a,b)=>{
+    const x=a[st.sortKey]??'',y=b[st.sortKey]??'';
+    const result=typeof x==='number'&&typeof y==='number'?x-y:String(x).localeCompare(String(y),'sk',{numeric:true});
+    return st.sortDesc?-result:result;
+  });
+  const stat=(label,note,value,cls='')=>'<div class="gr-stat '+cls+'"><span>'+label+'</span><strong>'+value+'</strong><small>'+note+'</small></div>';
+  if(st.mode==='day'){
+    const counts={present:0,absent:0,break:0,away:0,unrecorded:0};
+    for(const r of shown)counts[r.status_key]=(counts[r.status_key]||0)+1;
+    const worked=shown.reduce((v,r)=>v+Number(r.worked_min||0),0);
+    $('#grStats').innerHTML=stat('Zamestnanci','Vo vybranom prehľade',shown.length)+
+      stat('Prítomní*','Posledný príchod',counts.present,'present')+
+      stat('Neprítomnosti','Dovolenka, PN, OČR a ďalšie',counts.absent,'absent')+
+      stat('Mimo / odpracované','Posledný odchod alebo uzavretá zmena',counts.away,'away')+
+      stat('Odpracované spolu','Ukončené pracovné intervaly',groupReportHour(worked));
+  }else{
+    const sum=k=>shown.reduce((v,r)=>v+Number(r[k]||0),0);
+    $('#grStats').innerHTML=stat('Zamestnanci','Vo vybranom prehľade',shown.length)+
+      stat('Fond','Plánované hodiny',groupReportHour(sum('planned_min')))+
+      stat('Odpracované','Ukončené intervaly',groupReportHour(sum('worked_min')),'present')+
+      stat('Uznané voľno','Kontrolná hodnota',groupReportHour(sum('credited_min')))+
+      stat('Saldo','Orientačný súčet',groupReportHour(sum('saldo_min'),true))+
+      stat('Kontrolné nálezy','Zamestnanci s upozornením',shown.filter(r=>Number(r.warnings)>0).length,'absent');
+  }
+  $('#grTableTitle').textContent=(st.mode==='day'?'Denná dochádzka · '+st.day:'Hromadný mesačný výkaz · '+st.month);
+  $('#grCount').textContent='Zobrazených '+shown.length+' z '+rows.length+' zamestnancov. Klikni na meno pre detail.';
+  const header='<thead><tr>'+columns.map(k=>'<th data-gr-sort="'+k+'" class="'+(k==='name'?'gr-sticky-name':k==='personal_number'?'gr-sticky-id':'')+'">'+esc(fieldMap[k]||k)+(st.sortKey===k?(st.sortDesc?' ▼':' ▲'):'')+'</th>').join('')+'<th>Detail</th></tr></thead>';
+  const v=(r,key)=>{
+   if(key==='name')return '<button class="gr-name" data-gr-person="'+r.employee_id+'">'+esc(r.name)+'</button><small>'+esc(r.personal_number)+'</small>';
+   if(key==='status')return '<span class="gr-status gr-status-'+esc(r.status_key)+'"><span class="gr-dot">●</span>'+esc(r.status)+'</span>';
+   if(key==='presence')return '<span class="gr-presence">'+esc(r.presence)+'</span>';
+   if(key==='component')return r.component&&r.component!=='—'?'<span class="gr-component">'+esc(r.component)+'</span>':'—';
+   if(key==='warnings')return st.mode==='day'?(r.warnings?.length?'<span class="gr-alert" title="'+esc(r.warnings.join('; '))+'">⚠ '+r.warnings.length+'</span>':'<span class="gr-clear">✓</span>'):(r.warnings?'<span class="gr-alert">⚠ '+r.warnings+'</span>':'<span class="gr-clear">✓</span>');
+   if(/_min$/.test(key))return '<span class="gr-num '+(key==='saldo_min'?(r[key]<0?'gr-negative':'gr-positive'):'')+'">'+groupReportHour(r[key],key==='saldo_min')+'</span>';
+   return esc(r[key]??'—');
+  };
+  $('#grTable').innerHTML='<table class="gr-grid">'+header+'<tbody>'+sorted.map((r,i)=>'<tr class="'+(r.warnings?.length||r.warnings>0?'gr-needs-check':'')+'">'+columns.map(k=>'<td class="'+(k==='name'?'gr-sticky-name':k==='personal_number'?'gr-sticky-id':'')+'">'+v(r,k)+'</td>').join('')+'<td><button class="secondary mini" data-gr-person="'+r.employee_id+'">Otvoriť</button></td></tr>').join('')+'</tbody></table>'+(sorted.length?'':'<p class="empty">Pre zvolené filtre nie sú záznamy.</p>');
+  const aggregateFields=['planned_min','worked_min','break_min','credited_min','saldo_min'];
+  $('#grTableTotals').innerHTML='<div class="gr-totals"><strong>Súčet zobrazených</strong>'+aggregateFields.map(k=>'<span>'+esc(fieldMap[k])+': <b>'+groupReportHour(shown.reduce((v,r)=>v+Number(r[k]||0),0),k==='saldo_min')+'</b></span>').join('')+'</div>';
+  document.querySelectorAll('[data-gr-sort]').forEach(x=>x.onclick=()=>{const key=x.dataset.grSort;if(st.sortKey===key)st.sortDesc=!st.sortDesc;else{st.sortKey=key;st.sortDesc=false}render()});
+  document.querySelectorAll('[data-gr-person]').forEach(x=>x.onclick=()=>openGroupReportPerson(Number(x.dataset.grPerson),rows));
+ };
+ const load=async()=>{try{dataset=await api('/api/group-report?'+params());render()}catch(error){$('#grTable').innerHTML='<div class="error">'+esc(error.message)+'</div>';toast(error.message,true)}};
+ $('#grDay').onclick=()=>{st.mode='day';st.status='all';groupReportView()};
+ $('#grMonth').onclick=()=>{st.mode='month';st.status='all';groupReportView()};
+ $('#grDate').onchange=e=>{if(st.mode==='day')st.day=e.target.value;else st.month=e.target.value;load()};
+ $('#grDept').onchange=e=>{st.department=e.target.value;render()};
+ $('#grStatus').onchange=e=>{st.status=e.target.value;render()};
+ $('#grSearch').oninput=e=>{st.search=e.target.value;render()};
+ $('#grRefresh').onclick=load;
+ const download=async ext=>{const filename='bid_hromadna_dochadzka_'+st.mode+'_'+dateLabel()+'.'+ext;try{await fetchProtectedFile('/api/group-report/export?'+params()+'&file_format='+ext,filename);toast('Export '+ext.toUpperCase()+' pripravený')}catch(error){toast(error.message,true)}};
+ $('#grCsv').onclick=()=>download('csv');
+ $('#grXlsx').onclick=()=>download('xlsx');
+ await load();
+}
+async function openGroupReportPerson(id,rows){
+ const r=rows.find(p=>p.employee_id===id);
+ if(!r)return;
+ const div=$('#grDetail');
+ const period=groupReportState.mode==='day'?groupReportState.day:groupReportState.month;
+ const label=groupReportState.mode==='day'?'Vybraný deň':'Vybraný mesiac';
+ div.innerHTML='<div class="gr-detail-backdrop"><div class="gr-detail-sheet" role="dialog" aria-modal="true" aria-labelledby="grDetailTitle"><div class="section-top"><div><span class="muted">OSOBNÝ DOCHÁDZKOVÝ DETAIL</span><h3 id="grDetailTitle">'+esc(r.name)+'</h3><p>'+esc(r.department||'Bez útvaru')+' · '+esc(r.job_title||'—')+'</p></div><button id="grClose" class="secondary">✕ Zavrieť</button></div><div class="gr-detail-metrics"><div><span>Odpracované</span><strong>'+groupReportHour(r.worked_min)+'</strong></div><div><span>Fond</span><strong>'+groupReportHour(r.planned_min)+'</strong></div><div><span>Saldo</span><strong>'+groupReportHour(r.saldo_min,true)+'</strong></div></div><div class="gr-detail-body"><p><b>'+label+':</b> '+esc(period)+'</p><p><b>Osobné číslo:</b> '+esc(r.personal_number)+'</p><p><b>Pracovné zaradenie:</b> '+esc(r.department||'—')+' · '+esc(r.job_title||'—')+'</p>'+(groupReportState.mode==='day'?'<p><b>Príchod:</b> '+esc(r.first_in||'—')+' · <b>Odchod:</b> '+esc(r.last_out||'—')+'</p><p><b>Stav:</b> '+esc(r.status)+'</p><p><b>Zložka:</b> '+esc(r.component||'—')+'</p>':'<p><b>Aktuálna evidencia:</b> '+esc(r.presence)+'</p><p><b>Dovolenka:</b> '+groupReportHour(r.vacation_min)+' · <b>Lekár:</b> '+groupReportHour(r.doctor_min)+' · <b>Sprevádzanie:</b> '+groupReportHour(r.accompany_min)+'</p>')+'<div class="notice">Výpočty sú informačné a nevzniká tým rozhodnutie o mzdovom zvýhodnení ani o nadčase.</div></div><div class="actions gr-detail-actions"><button class="primary" id="grPersonPdf">Mesačný PDF výkaz</button><button class="secondary" id="grPersonCorrections">Záznamy a opravy</button></div></div></div>';
+ $('#grClose').onclick=()=>div.innerHTML='';
+ div.querySelector('.gr-detail-backdrop').onclick=e=>{if(e.target.classList.contains('gr-detail-backdrop'))div.innerHTML=''};
+ $('#grPersonPdf').onclick=async()=>{const month=period.slice(0,7),[year,number]=month.split('-');try{await fetchProtectedFile('/api/reports/monthly/'+id+'/pdf?year='+year+'&month='+Number(number),'dochadzka_'+r.personal_number+'_'+month+'.pdf');toast('PDF výkaz pripravený')}catch(e){toast(e.message,true)}};
+ $('#grPersonCorrections').onclick=()=>{div.innerHTML='';navigate('corrections')};
 }
