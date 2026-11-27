@@ -103,3 +103,27 @@ Používa rovnakú HTTPS adresu ako web: https://sk-dochadzka-portal.onrender.co
 **Bezpečnostné upozornenia:** mobilný frontend používa tie isté backendové údaje ako web a API pre samoobsluhu je filtrované podľa overeného prihláseného účtu, nie parametra od klienta. PWA cache obsahuje len verejné súbory aplikácie; žiadne API odpovede ani údaje o zamestnancoch neukladá offline. **Offline zadávanie a neskoršie odosielanie udalostí nie je implementované.** Token je v sessionStorage a relácia sa môže pri uzavretí mobilného webového okna ukončiť. Admin/HR roly si pred produkciou vyžadujú podrobnejší bezpečnostný audit.
 
 **Dôležité:** bez trvalej databázy a detailného vyhodnotenia legislatívy sa tento systém nesmie používať na ostrú evidenciu zamestnancov a výplatné podklady.
+
+
+## Rozšírenie podľa BID Dochádzka – návrh 27.11.2026
+Implementované:
+- BID modro-žltý vizuál, responzívna mobilná PWA so spodnou navigáciou a rolovým dashboardom
+- detailná karta zamestnanca s osobným číslom, kontaktmi, útvarom, funkciou, priamym vedúcim, úväzkom, dovolenkovým nárokom, dátumami, UID čipu a predvolenou zmenou
+- editácia zamestnancov a API `/api/hr/employees`, šablóny zmien, generátor cyklu D–N–V–V a ďalších cyklov
+- samoobsluha zamestnanca, žiadosti, PDF vlastného mesačného výkazu, vedúci vidí len priamo priradených podriadených a môže ich žiadosti vybaviť; vlastné žiadosti sa nedajú schváliť
+- PN a OČR ako evidované oznámenia (bez štandardného schvaľovania), uzatváranie mesiaca s auditom a blokovaním zmien neprítomností a plánov
+- individuálny mesačný PDF výkaz s dennými záznamami, fondom, započítaným voľnom a orientačným saldom; súhrnný CSV export pre mzdy vrátane kontrolných minút nočnej práce, soboty, nedele a označených sviatkov
+- online kiosk `/kiosk` (čítačka v režime klávesnice + Enter, samostatne nastavený terminálový kľúč)
+- používateľské účty, vynútená zmena dočasného hesla, administratívny reset hesla, samostatná auditorská rola.
+
+**Problémy a obmedzenia pred ostrým nasadením:**
+1. **Trvalá databáza NIE JE zatiaľ pripojená.** Momentálne Render web service používa SQLite v dočasnom úložisku a záznamy môžu pri reštarte zmiznúť. Vytvorená testovacia Render PostgreSQL databáza nie je pripojená. Na produkciu je potrebná perzistentná PostgreSQL s pravidelnými zálohami. Bez toho nezadávať osobné údaje zamestnancov.
+2. **Bezpečnostný audit nie je hotový.** Rozhranie vyžaduje jemnejšie RBAC pre úplný podstrom útvarov, MFA, izoláciu a rotáciu kľúčov terminálov, ochranu proti klonovaniu kariet, rate limiting, penetráčný test a GDPR opatrenia. Účet admin používaj len na testovanie.
+3. **Mesačná uzávierka je čiastočná:** blokuje úpravy rozpisov a neprítomností v uzavretom mesiaci, ale nezabezpečuje historické snapshoty, nemennosť pípnutí, verzovanie zmeny úväzku a úplný mzdový lock.
+4. **Výpočty zostávajú kontrolné:** nočné, víkendové a sviatkové minúty sú množstvá času, nie priamo príplatky. Pracovné pohotovosti, platba za sviatok, kolektívne výnimky, rozdelenie dochádzky podľa polnoci, rozvrhy so zvláštnymi prestávkami a práca nadčas vyžadujú ďalšie spracovanie a overenie mzdárom. Nie všetky diely používajú jednotný intervalový engine.
+5. **Kiosk je online-only** a používa globálny terminálový kľúč na zariadení (uložený v sessionStorage). Offline fronta 72 h, individuálne kľúče na zariadenie, kryptografické karty a audit retransmisie zatiaľ nie sú hotové.
+6. **Export:** PDF jednotlivca + sumarizačný CSV existujú. Konfigurovateľné mapovanie do konkrétneho mzdového systému, XLSX/XML/JSON export, tvorba exportných profilov a elektronické schvaľovanie uzávierky zatiaľ nie.
+7. **Roly:** vedúci má základné právomoci len na priamych podriadených; celá organizačná hierarchia, zástupcovia, automatická eskalácia a testy viacúrovňového schvaľovania nie sú hotové.
+8. **Testovanie:** sú uložené jednotkové testy vybraných výpočtov, ale nenahrádzajú integráciu, E2E testy, penetračný test a mesačný paralelný mzdový pilot.
+
+Originálny dokument BID Dochádzka (PDF, 17 strán) bol použitý ako funkčný a vizuálny podklad. Zdrojový ZIP prototypu spomenutý v dokumente nebol importovaný do tohto repozitára.
