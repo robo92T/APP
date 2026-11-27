@@ -24,11 +24,15 @@ def is_premium_holiday(day:date)->bool:
     """Reference flag for working-time categorization; not a wage calculation."""
     if (day.month,day.day) in REGULAR_WORKING_HOLIDAYS:
         return False
+    if day.year==2026 and (day.month,day.day) in SPECIAL_WORKING_2026:
+        return True
     return day in holidays.country_holidays("SK",years=[day.year])
 
 def holiday_details(day:date)->dict:
     all_holidays=holidays.country_holidays("SK",years=[day.year])
     label=all_holidays.get(day)
+    if day.year==2026:
+        label=label or {(5,8):"Deň víťazstva nad fašizmom",(9,15):"Sedembolestná Panna Mária"}.get((day.month,day.day))
     return {
         "date":day.isoformat(),
         "name":label,
