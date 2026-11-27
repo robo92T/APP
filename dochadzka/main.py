@@ -138,7 +138,7 @@ def working_dates(start:date,end:date):
         day+=timedelta(days=1)
 @app.get("/api/calendar/{year}", dependencies=[Depends(admin)])
 def calendar(year:int):
-    return [{"date":str(d),"name":n} for d,n in sorted(holidays.country_holidays("SK",years=[year]).items())]
+    return [{"date":str(d),"name":n,"day_off":not is_workday(d)} for d,n in sorted(holidays.country_holidays("SK",years=[year]).items())]
 @app.get("/api/balances/{employee_id}/{year}", dependencies=[Depends(admin)])
 def balances(employee_id:int,year:int,db:Session=Depends(db)):
     e=db.get(Employee,employee_id)
