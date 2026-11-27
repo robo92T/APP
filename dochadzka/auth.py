@@ -2,7 +2,9 @@
 Set AUTH_SECRET to a random 64+ character value in production.
 Legacy X-Admin-Key endpoints are kept for development; disable them in production.
 """
-import base64, hashlib, hmac, os, secrets
+import base64, hashlib, hmac, os, secrets, time
+import pyotp
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 from fastapi import Depends, Header, HTTPException, Request
@@ -14,6 +16,13 @@ from sqlalchemy.orm import Mapped, mapped_column, Session
 class Credentials(BaseModel):
     username: str = Field(min_length=3, max_length=80)
     password: str = Field(min_length=8, max_length=256)
+    otp: Optional[str] = Field(default=None,max_length=8)
+
+class MfaSetupRequest(BaseModel):
+    password: str
+
+class MfaConfirmRequest(BaseModel):
+    code: str = Field(min_length=6,max_length=8)
 
 class PasswordChange(BaseModel):
     old_password: str
@@ -45,6 +54,11 @@ def install(app, Base, Employee, engine, db, audit):
         __tablename__="password_policy"
         account_id:Mapped[int]=mapped_column(ForeignKey("account.id"),primary_key=True)
         must_change:Mapped[bool]=mapped_column(Boolean,default=True)
+    class MfaSetting(Base):
+        __tablename__='mfa_setting'
+        account_id:Mapped[int]=mapped_column(ForeignKey('account.id'),primary_key=True)
+        encrypted_secret:Mapped[str]=mapped_column(String(500))
+        enabled:Mapped[bool]=mapped_column(Boolean,default=False)
     Base.metadata.create_all(engine)
     # First-run bootstrap, only when explicitly configured by deployer.
     bootstrap_user=os.getenv("BOOTSTRAP_ADMIN_USERNAME","").strip()
@@ -61,6 +75,22 @@ def install(app, Base, Employee, engine, db, audit):
                     audit(session, "system", "admin.password.reset", "operator initiated")
                     session.commit()
     secret=os.getenv("AUTH_SECRET","")
+    attempts={}
+    def encrypt_totp(value:str)->str:
+        nonce=secrets.token_bytes(12)
+        key=hashlib.sha256(("bid-totp:"+secret).encode()).digest()
+        return base64.urlsafe_b64encode(nonce+AESGCM(key).encrypt(nonce,value.encode(),None)).decode()
+    def decrypt_totp(value:str)->str:
+        raw=base64.urlsafe_b64decode(value)
+        key=hashlib.sha256(("bid-totp:"+secret).encode()).digest()
+        return AESGCM(key).decrypt(raw[:12],raw[12:],None).decode()
+    def throttle(request:Request,username:str):
+        identity=(request.client.host if request.client else "unknown",username.lower())
+        now=time.monotonic()
+        failures=[t for t in attempts.get(identity,[]) if now-t<900]
+        attempts[identity]=failures
+        if len(failures)>=5:raise HTTPException(429,"Príliš veľa pokusov. Skús to o 15 minút.")
+        return identity,now
     def current(request:Request,session:Session=Depends(db)):
         bearer=request.headers.get("Authorization","")
         if not bearer.startswith("Bearer "):raise HTTPException(401,"Vyžaduje sa prihlásenie")
@@ -80,16 +110,54 @@ def install(app, Base, Employee, engine, db, audit):
             return account
         return check
     @app.post("/api/auth/login")
-    def login(payload:Credentials,session:Session=Depends(db)):
+    def login(payload:Credentials,request:Request,session:Session=Depends(db)):
+        key,now=throttle(request,payload.username)
         account=session.scalar(select(Account).where(Account.username==payload.username))
-        if not account or not account.active or not verify_password(payload.password,account.password_hash):
-            raise HTTPException(401,"Nesprávne prihlasovacie údaje")
+        valid=bool(account and account.active and verify_password(payload.password,account.password_hash))
+        if valid:
+            mfa=session.get(MfaSetting,account.id)
+            if mfa and mfa.enabled:
+                valid=bool(payload.otp and pyotp.TOTP(decrypt_totp(mfa.encrypted_secret)).verify(payload.otp,valid_window=1))
+        if not valid:
+            attempts[key].append(now)
+            raise HTTPException(401,"Nesprávne prihlasovacie údaje alebo overovací kód")
+        attempts.pop(key,None)
         if len(secret)<32:raise HTTPException(503,"AUTH_SECRET nie je nakonfigurovaný")
         issued=datetime.now(timezone.utc)
         signed=jwt.encode({"sub":str(account.id),"iat":issued,"exp":issued+timedelta(hours=8)},secret,algorithm="HS256")
         audit(session,account.username,"login","successful");session.commit()
         policy=session.get(PasswordPolicy,account.id)
         return {"access_token":signed,"token_type":"bearer","role":account.role,"username":account.username,"employee_id":account.employee_id,"must_change_password":bool(policy and policy.must_change)}
+    @app.post("/api/auth/mfa/setup")
+    def mfa_setup(payload:MfaSetupRequest,account=Depends(current),session:Session=Depends(db)):
+        if len(secret)<32:raise HTTPException(503,"AUTH_SECRET nie je nakonfigurovaný")
+        if not verify_password(payload.password,account.password_hash):
+            raise HTTPException(401,"Nesprávne heslo")
+        setting=session.get(MfaSetting,account.id)
+        if setting and setting.enabled:raise HTTPException(409,"MFA je už aktívne")
+        totp_secret=pyotp.random_base32()
+        if not setting:
+            setting=MfaSetting(account_id=account.id,encrypted_secret=encrypt_totp(totp_secret),enabled=False)
+            session.add(setting)
+        else:
+            setting.encrypted_secret=encrypt_totp(totp_secret)
+        session.commit()
+        return {"secret":totp_secret,"provisioning_uri":pyotp.totp.TOTP(totp_secret).provisioning_uri(name=account.username,issuer_name="BID Dochadzka"),
+                "note":"Ulož kód v autentifikačnej aplikácii a potvrď ho. Ak stratíš mobil, bude potrebný administrátorský zásah."}
+    @app.post("/api/auth/mfa/confirm")
+    def mfa_confirm(payload:MfaConfirmRequest,account=Depends(current),session:Session=Depends(db)):
+        setting=session.get(MfaSetting,account.id)
+        if not setting:raise HTTPException(404,"Najprv nastav MFA")
+        if not pyotp.TOTP(decrypt_totp(setting.encrypted_secret)).verify(payload.code,valid_window=1):
+            raise HTTPException(401,"Neplatný overovací kód")
+        setting.enabled=True
+        audit(session,account.username,"mfa.enabled","TOTP")
+        session.commit()
+        return {"enabled":True}
+    @app.get("/api/auth/mfa/status")
+    def mfa_status(account=Depends(current),session:Session=Depends(db)):
+        setting=session.get(MfaSetting,account.id)
+        return {"enabled":bool(setting and setting.enabled)}
     @app.get("/api/auth/me")
     def me(account=Depends(current),session:Session=Depends(db)):
         policy=session.get(PasswordPolicy,account.id)
