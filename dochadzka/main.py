@@ -374,8 +374,11 @@ install_secure_backup(app,Base,db,require_role,audit)
 from devices import install as install_devices
 install_devices(app,Base,Employee,Event,engine,db,require_role,audit,is_closed_range)
 
+from legal_monitor import install as install_legal_monitor
+get_approved_legal_rules=install_legal_monitor(app,Base,engine,db,require_role,audit)
+
 from legal_entitlements import install as install_legal_entitlements
-install_legal_entitlements(app,Base,Employee,Absence,Shift,engine,db,require_role,audit)
+install_legal_entitlements(app,Base,Employee,Absence,Shift,engine,db,require_role,audit,get_approved_legal_rules)
 
 from exports_v2 import install as install_export_profiles
 install_export_profiles(app,Base,Employee,Event,Absence,Shift,engine,db,require_role,audit,__import__("pdf_reports").build_rows)
