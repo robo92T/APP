@@ -64,6 +64,16 @@ async function payrollView(){
     }catch(error){toast(error.message,true)}
   };
 
+  if(currentUser?.role==='admin'){
+    try{
+      const backups=await api('/api/admin/backups/status');
+      const el=document.createElement('div');el.className='panel';
+      el.innerHTML='<div class="section-top"><div><h3>Automatické šifrované zálohy</h3><span class="muted">Trvalý PostgreSQL + súkromné zálohovacie úložisko, nie GitHub</span></div><button id="backupRunNow" class="secondary" '+(backups.configured?'':'disabled')+'>Spustiť overenú zálohu</button></div><div class="notice">'+esc(backups.note)+'</div><p><strong>Trvalá databáza:</strong> '+(backups.persistent_database?'Áno':'Nie')+' · <strong>S3 úložisko:</strong> '+esc(backups.destination)+' · <strong>Automatické zálohy:</strong> '+(backups.scheduler_enabled?'Zapnuté (iba počas behu servera)':'Vypnuté')+'</p><div class="scroll"><table><thead><tr><th>Spustenie</th><th>Stav</th><th>Veľkosť</th><th>Výsledok</th></tr></thead><tbody>'+backups.runs.map(x=>'<tr><td>'+esc(x.started_at||'—')+'</td><td>'+esc(x.status)+'</td><td>'+x.size_bytes+' B</td><td>'+esc(x.error||'—')+'</td></tr>').join('')+'</tbody></table></div>';
+      $('#content').append(el);
+      $('#backupRunNow').onclick=async()=>{if(!confirm('Spustiť a overiť šifrovanú zálohu do súkromného S3?'))return;try{const result=await api('/api/admin/backups/run',{method:'POST'});toast('Záloha '+result.status);payrollView()}catch(e){toast(e.message,true)}};
+    }catch(error){toast(error.message,true)}
+  }
+
 }
 async function employeeRequests(){
 const d=await api('/api/me/summary');
