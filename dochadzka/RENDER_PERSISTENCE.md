@@ -30,9 +30,14 @@ s automatickými zálohami. Neautorizované zvýšenie nákladov sa nevykonalo.
    Pred aktiváciou zisti cenu a schváľ ju.
 
 **Dôležité k už existujúcim údajom:** zmena DATABASE_URL sama neprenesie
-údaje z pôvodnej SQLite databázy. Pred prechodom stiahni šifrovanú zálohu
-**Uzávierka a export → Šifrovaná záloha dát** a ulož si heslo na bezpečnom
-mieste. V novej DB môžeš obnoviť zálohu cez `restore_backup.py` v
+údaje z pôvodnej SQLite databázy. Pred prechodom je nutné zabezpečiť úplný export existujúcej databázy.
+**POZOR:** pôvodná produkčná služba ešte nemusí obsahovať nový export
+šifrovanej zálohy. Nasadenie kódu s exportom samo môže zmazať SQLite dáta.
+Preto sa nesmie naslepo redeployovať. Ak už boli zadané skutočné záznamy,
+potrebuje administrátor prístup k bežiacej starej inštancii a bezpečné
+stiahnutie SQLite súboru alebo export všetkých tabuliek pred redeployom.
+Nové tlačidlo **Uzávierka a export → Šifrovaná záloha dát** je dostupné
+v novej verzii, nie nutne v pôvodnom portáli. V novej DB môžeš obnoviť zálohu cez `restore_backup.py` v
 dôveryhodnom prostredí s prístupom k DB a následne overiť počet zamestnancov
 a vzorku mesačných výkazov. Bez overeného exportu/obnovy nemanipuluj
 s existujúcimi produkčnými dátami.
