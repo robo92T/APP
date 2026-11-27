@@ -226,6 +226,11 @@ async function updateStorageWarning(){
   try{
     const response=await fetch('/health',{cache:'no-store'});
     const status=await response.json();
+    const banner=$('#demoBanner');
+    if(banner){
+      banner.classList.toggle('hidden',!status.demo_mode);
+      banner.textContent=status.demo_mode?'UKÁŽKOVÉ ÚDAJE · '+(status.demo_employees||0)+' fiktívnych zamestnancov · žiadne reálne osobné údaje':'';
+    }
     const el=$('#storageWarning');
     if(!el)return;
     el.classList.toggle('hidden',!!status.persistent);
