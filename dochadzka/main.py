@@ -291,6 +291,10 @@ if STATIC_DIR.is_dir():
     def home(): return FileResponse(STATIC_DIR / "index.html")
     @app.head("/", include_in_schema=False)
     def home_head(): return FileResponse(STATIC_DIR / "index.html")
+    @app.get("/manifest.webmanifest",include_in_schema=False)
+    def pwa_manifest(): return FileResponse(STATIC_DIR / "manifest.webmanifest",media_type="application/manifest+json")
+    @app.get("/sw.js",include_in_schema=False)
+    def service_worker(): return FileResponse(STATIC_DIR / "sw.js",media_type="application/javascript",headers={"Service-Worker-Allowed":"/","Cache-Control":"no-cache"})
 
 from scheduling import install as install_scheduling
 install_scheduling(app,Base,Employee,Event,Absence,engine,db,admin,audit)
