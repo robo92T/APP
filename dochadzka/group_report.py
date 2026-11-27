@@ -113,6 +113,17 @@ def install(app,Employee,Event,Absence,Shift,Base,db,require_role):
         for e in all_events:events_by[e.employee_id].append(e)
         for a in all_absences:absences_by[a.employee_id].append(a)
         for shift in all_shifts:shifts_by[shift.employee_id][shift.day]=shift
+        travel_dates=set()
+        travel_table=Base.metadata.tables.get("travel_order")
+        if travel_table is not None:
+            for trip in session.execute(select(travel_table).where(
+                travel_table.c.status=="approved")).mappings().all():
+                start=utc_time(trip["starts_at"]).astimezone(TZ).date()
+                end=utc_time(trip["ends_at"]).astimezone(TZ).date()
+                day_cursor=max(start,period_start)
+                while day_cursor<=min(end,period_end):
+                    travel_dates.add((trip["employee_id"],day_cursor))
+                    day_cursor+=timedelta(days=1)
         report_rows=[]
         counts={"total":0,"present":0,"break":0,"absent":0,"away":0,"unrecorded":0,"warning":0}
         now=datetime.now(timezone.utc)
@@ -144,7 +155,10 @@ def install(app,Employee,Event,Absence,Shift,Base,db,require_role):
                 # For historical days, a finished punch does not imply "in the office now".
                 if not is_current:
                     state="history"
-                if absent_labels:
+                on_trip=(person.id,target) in travel_dates
+                if on_trip:
+                    status="Služobná cesta";key="absent"
+                elif absent_labels:
                     status="Neprítomnosť"
                     key="absent"
                 elif is_current and state=="present":
@@ -171,7 +185,7 @@ def install(app,Employee,Event,Absence,Shift,Base,db,require_role):
                     "last_kind":latest_punch.kind if latest_punch else None,
                     "planned_min":r["plan"],"worked_min":r["worked"],
                     "break_min":r["breaks"],"credited_min":r["credit"],
-                    "saldo_min":r["saldo"],"component":", ".join(absent_labels) if absent_labels else ("Práca" if r["worked"] else "—"),
+                    "saldo_min":r["saldo"],"component":"Služobná cesta" if on_trip else ", ".join(absent_labels) if absent_labels else ("Práca" if r["worked"] else "—"),
                     "warnings":warning}
                 report_rows.append(out)
                 counts[key]+=1;counts["total"]+=1
@@ -186,7 +200,9 @@ def install(app,Employee,Event,Absence,Shift,Base,db,require_role):
                 presence_events=[e for e in records if utc_time(e.at)<=now and e.kind!="void"]
                 state,_=state_for_date(presence_events,now)
                 today_absences=[a for a in confirmed if a.start<=current_day<=a.end]
+                on_trip_today=(person.id,current_day) in travel_dates
                 presence=", ".join(ABSENCE_LABELS.get(a.kind,a.kind) for a in today_absences) if today_absences else ("Príchod otvorený*" if state=="present" else "Mimo / bez otvoreného príchodu")
+                if on_trip_today:presence="Služobná cesta"
                 warnings=sum(len(r["warnings"]) for r in daily)+len(category["warnings"])
                 out={**common,"presence":presence,
                     "planned_min":totals["plan"],"worked_min":totals["worked"],
