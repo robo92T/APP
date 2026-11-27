@@ -314,6 +314,8 @@ if STATIC_DIR.is_dir():
     def home(): return FileResponse(STATIC_DIR / "index.html")
     @app.head("/", include_in_schema=False)
     def home_head(): return FileResponse(STATIC_DIR / "index.html")
+    @app.get("/kiosk",include_in_schema=False)
+    def kiosk_page(): return FileResponse(STATIC_DIR / "kiosk.html")
     @app.get("/manifest.webmanifest",include_in_schema=False)
     def pwa_manifest(): return FileResponse(STATIC_DIR / "manifest.webmanifest",media_type="application/manifest+json")
     @app.get("/sw.js",include_in_schema=False)
