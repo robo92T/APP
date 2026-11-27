@@ -16,7 +16,7 @@ from legal_calendar import is_workday,holiday_details
 class ExtraEscortInput(BaseModel):
     extra_days:int=Field(ge=0,le=7)
 
-def install(app,Base,Employee,Absence,Shift,engine,db,require_role,audit):
+def install(app,Base,Employee,Absence,Shift,engine,db,require_role,audit,get_approved_legal_rules=None):
     class EscortEntitlement(Base):
         __tablename__="escort_entitlement"
         id:Mapped[int]=mapped_column(primary_key=True)
@@ -42,6 +42,8 @@ def install(app,Base,Employee,Absence,Shift,engine,db,require_role,audit):
     def set_extra_escort(employee_id:int,year:int,data:ExtraEscortInput,
                          actor=Depends(require_role("admin","hr")),session:Session=Depends(db)):
         if not session.get(Employee,employee_id):raise HTTPException(404,"Zamestnanec neexistuje")
+        limits=get_approved_legal_rules(session,date(year,1,1)) if get_approved_legal_rules else {"escort_extra_days_max":7}
+        if data.extra_days>limits["escort_extra_days_max"]:raise HTTPException(422,"Počet presahuje schválené zákonné pravidlo")
         if year<2026 or year>2100:raise HTTPException(422,"Neplatný rok")
         item=session.scalar(select(EscortEntitlement).where(EscortEntitlement.employee_id==employee_id,
             EscortEntitlement.year==year))
@@ -58,10 +60,13 @@ def install(app,Base,Employee,Absence,Shift,engine,db,require_role,audit):
         if year<2020 or year>2100:raise HTTPException(422,"Neplatný rok")
         employee=session.get(Employee,employee_id)
         if not employee:raise HTTPException(404,"Zamestnanec neexistuje")
+        limits=get_approved_legal_rules(session,date(year,1,1)) if get_approved_legal_rules else {"doctor_paid_days":7,"escort_paid_days":7,"escort_extra_days_max":7}
+        doctor_days=limits["doctor_paid_days"]
+        escort_days=limits["escort_paid_days"]
         daily=employee.weekly_minutes/max(1,employee.work_days)
         extra=session.scalar(select(EscortEntitlement).where(EscortEntitlement.employee_id==employee_id,
             EscortEntitlement.year==year))
-        extra_days=extra.extra_days if extra else 0
+        extra_days=min(extra.extra_days,limits["escort_extra_days_max"]) if extra else 0
         absences=session.scalars(select(Absence).where(
             Absence.employee_id==employee_id,Absence.status=="approved",
             Absence.start<=date(year,12,31),Absence.end>=date(year,1,1))).all()
@@ -80,12 +85,13 @@ def install(app,Base,Employee,Absence,Shift,engine,db,require_role,audit):
             return {"minutes":minutes,"reference_days":round(days,2)}
         doctor=used("doctor");escort=used("accompany");vacation=used("vacation")
         return {"employee_id":employee_id,"year":year,"reference_daily_minutes":daily,
-                "doctor":{"limit_days":7,"limit_minutes":int(7*daily),"used":doctor,
-                    "remaining_reference_minutes":max(0,int(7*daily)-doctor["minutes"])},
-                "accompany":{"limit_days":7+extra_days,"base_days":7,
+                "doctor":{"limit_days":doctor_days,"limit_minutes":int(doctor_days*daily),"used":doctor,
+                    "remaining_reference_minutes":max(0,int(doctor_days*daily)-doctor["minutes"])},
+                "accompany":{"limit_days":escort_days+extra_days,"base_days":escort_days,
                     "additional_days_approved_by_hr":extra_days,"used":escort,
-                    "remaining_reference_minutes":max(0,int((7+extra_days)*daily)-escort["minutes"])},
+                    "remaining_reference_minutes":max(0,int((escort_days+extra_days)*daily)-escort["minutes"])},
                 "vacation":{"approved_reference_used":vacation,
                     "warning":"Ročný nárok, prenos a krátenie musia byť potvrdené HR podľa § 103–109 ZP."},
-                "source":"§ 141 ods. 2 písm. a/c ZP – pravidlo 7 dní; ďalších 7 dní za splnených podmienok od 1.1.2026",
+                "approved_rule_values":limits,
+                "source":"§ 141 Zákonníka práce; schválené konfigurácie pravidiel podľa dátumu účinnosti",
                 "warning":"Ide o kontrolné limity, nie automatické potvrdenie nároku; čas potrebnosti, rozvrh a doklady musí overiť HR."}
