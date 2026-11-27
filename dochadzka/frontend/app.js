@@ -560,7 +560,7 @@ async function travelView(){
 }
 async function mealsView(){
  const period=localDate().slice(0,7);
- $('#content').innerHTML='<div class="panel"><div class="section-top"><div><h3>Stravovacie lístky a nárok na stravu</h3><p class="muted">Každý zamestnanec a deň · podmienka viac ako 4 hodiny práce · pracovné cesty osobitne</p></div><div class="actions"><input id="mealPeriod" type="month" value="'+period+'"><button id="mealLoad" class="primary">Prepočítať</button></div></div><div id="mealOverview"></div></div><div class="panel"><h3>Právne pravidlá a výnimky</h3><p>Bežný príspevok za pracovný deň a stravné počas pracovnej cesty sa posudzujú samostatne. Pri pracovnej ceste môže bežný nárok vzniknúť, ak zamestnanec na pravidelnom pracovisku odpracoval viac ako štyri hodiny. Rozvrh dlhší ako 11 hodín môže viesť k ďalšiemu príspevku, ale nie automaticky.</p><div class="notice">Tento prehľad nevyhodnocuje individuálne rozšírenie nároku podľa interného predpisu BID napríklad počas dovolenky alebo iných prekážok. Tieto dni vyžadujú HR kontrolu.</div></div>';
+ $('#content').innerHTML='<div class="panel"><div class="section-top"><div><h3>Stravovacie lístky a nárok na stravu</h3><p class="muted">Každý zamestnanec a deň · podmienka viac ako 4 hodiny práce · pracovné cesty osobitne</p></div><div class="actions"><input id="mealPeriod" type="month" value="'+period+'"><button id="mealLoad" class="primary">Prepočítať</button><button id="mealExport" class="secondary">⇩ Export CSV</button></div></div><div id="mealOverview"></div></div><div class="panel"><h3>Právne pravidlá a výnimky</h3><p>Bežný príspevok za pracovný deň a stravné počas pracovnej cesty sa posudzujú samostatne. Pri pracovnej ceste môže bežný nárok vzniknúť, ak zamestnanec na pravidelnom pracovisku odpracoval viac ako štyri hodiny. Rozvrh dlhší ako 11 hodín môže viesť k ďalšiemu príspevku, ale nie automaticky.</p><div class="notice">Tento prehľad nevyhodnocuje individuálne rozšírenie nároku podľa interného predpisu BID napríklad počas dovolenky alebo iných prekážok. Tieto dni vyžadujú HR kontrolu.</div></div>';
  const load=async()=>{const [year,month]=$('#mealPeriod').value.split('-').map(Number);try{
  const data=await api('/api/meals/month?year='+year+'&month='+month);
  const labels={eligible:'Nárok',not_eligible:'Bez nároku',requires_regular_workplace_review:'Preveriť pracovisko',travel_allowance_only:'Stravné na ceste',travel_details_missing:'Doplniť cestu'};
@@ -573,5 +573,7 @@ async function mealsView(){
   $('#mealDailyDetails').scrollIntoView({behavior:'smooth',block:'start'});
  });
  }catch(e){$('#mealOverview').innerHTML='<div class="error">'+esc(e.message)+'</div>';toast(e.message,true)}};
- $('#mealLoad').onclick=load;await load();
+ $('#mealLoad').onclick=load;
+ $('#mealExport').onclick=async()=>{const [y,m]=$('#mealPeriod').value.split('-').map(Number);try{await fetchProtectedFile('/api/meals/month.csv?year='+y+'&month='+m,'bid_stravne_'+y+'_'+String(m).padStart(2,'0')+'.csv');toast('Mesačné stravovanie exportované')}catch(e){toast(e.message,true)}};
+ await load();
 }
