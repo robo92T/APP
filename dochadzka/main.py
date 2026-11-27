@@ -92,6 +92,94 @@ def health(): return {"status":"ok"}
 @app.get("/api/employees", dependencies=[Depends(admin)])
 def employees(db: Session = Depends(db)):
     return [{"id":e.id,"name":e.name,"weekly_minutes":e.weekly_minutes,"work_days":e.work_days,"annual_leave_weeks":e.annual_leave_weeks,"start_date":e.start_date,"active":e.active} for e in db.scalars(select(Employee)).all()]
+@app.get("/api/employees/overview", dependencies=[Depends(admin)])
+def employee_overview(year: int = Query(default=2026, ge=2020, le=2100), month: int = Query(default=11, ge=1, le=12), db: Session = Depends(db)):
+    """Administrative employee matrix. Totals exclude open punches and do not infer payroll eligibility."""
+    from calendar import monthrange
+    begin = date(year, month, 1)
+    end = date(year, month, monthrange(year, month)[1])
+    start_utc = datetime.combine(begin, datetime.min.time(), TZ).astimezone(timezone.utc)
+    end_utc = datetime.combine(end + timedelta(days=1), datetime.min.time(), TZ).astimezone(timezone.utc)
+    people = db.scalars(select(Employee).order_by(Employee.name)).all()
+    result = []
+    for employee in people:
+        events = db.scalars(select(Event).where(
+            Event.employee_id == employee.id, Event.at >= start_utc, Event.at < end_utc
+        ).order_by(Event.at, Event.id)).all()
+        begin_at = None
+        break_at = None
+        break_minutes = 0
+        worked = 0
+        first_in = None
+        last_out = None
+        warnings = []
+        for event in events:
+            at = event.at.replace(tzinfo=timezone.utc) if event.at.tzinfo is None else event.at.astimezone(timezone.utc)
+            if event.kind == "in":
+                if begin_at is not None:
+                    warnings.append("duplicitný príchod")
+                else:
+                    begin_at, break_at, break_minutes = at, None, 0
+                    if first_in is None:
+                        first_in = at
+            elif event.kind == "break_start":
+                if begin_at is not None and break_at is None:
+                    break_at = at
+                else:
+                    warnings.append("prestávka bez príchodu")
+            elif event.kind == "break_end":
+                if break_at is not None:
+                    break_minutes += max(0, int((at - break_at).total_seconds() // 60))
+                    break_at = None
+                else:
+                    warnings.append("koniec prestávky bez začiatku")
+            elif event.kind == "out":
+                if begin_at is None:
+                    warnings.append("odchod bez príchodu")
+                else:
+                    if break_at is not None:
+                        break_minutes += max(0, int((at-break_at).total_seconds()//60))
+                    worked += max(0, int((at - begin_at).total_seconds() // 60) - break_minutes)
+                    last_out = at
+                    begin_at, break_at, break_minutes = None, None, 0
+        if begin_at is not None:
+            warnings.append("neukončený príchod")
+        absences = db.scalars(select(Absence).where(
+            Absence.employee_id == employee.id, Absence.status == "approved",
+            Absence.start <= end, Absence.end >= begin
+        )).all()
+        per_day = employee.weekly_minutes / max(1,employee.work_days)
+        absence_totals = {}
+        for absence in absences:
+            overlap_start = max(begin,absence.start)
+            overlap_end = min(end,absence.end)
+            minutes = (absence.minutes if overlap_start == overlap_end and absence.minutes is not None
+                else round(per_day * sum(1 for _ in working_dates(overlap_start,overlap_end))))
+            absence_totals[absence.kind] = absence_totals.get(absence.kind,0) + minutes
+        # A reference work fund, not a contractual shift roster.
+        reference_plan = round(per_day * sum(1 for d in working_dates(begin,end) if d >= employee.start_date and (employee.end_date is None or d <= employee.end_date)))
+        result.append({
+            "id": employee.id, "name": employee.name,
+            "card_assigned": bool(employee.card_uid),
+            "weekly_minutes": employee.weekly_minutes,
+            "work_days": employee.work_days,
+            "annual_leave_weeks": employee.annual_leave_weeks,
+            "start_date": employee.start_date,
+            "active": employee.active,
+            "first_in": first_in.astimezone(TZ).isoformat() if first_in else None,
+            "last_out": last_out.astimezone(TZ).isoformat() if last_out else None,
+            "worked_minutes": worked,
+            "reference_plan_minutes": reference_plan,
+            "indicative_balance_minutes": worked + sum(absence_totals.get(k,0) for k in ("vacation","doctor","accompany","paid_leave","wedding","funeral","blood_donation","training","business_trip")) - reference_plan,
+            "vacation_minutes": absence_totals.get("vacation",0),
+            "doctor_minutes": absence_totals.get("doctor",0),
+            "accompany_minutes": absence_totals.get("accompany",0),
+            "sick_minutes": absence_totals.get("sick",0),
+            "ocr_minutes": absence_totals.get("ocr",0),
+            "warnings": warnings
+        })
+    return {"period": f"{year:04d}-{month:02d}", "note": "Fond a saldo sú orientačné; pri individuálnych zmenách a pracovných prekážkach vyžadujú kontrolu.", "employees": result}
+
 @app.post("/api/employees", dependencies=[Depends(admin)])
 def add_employee(data: EmployeeCreate, db: Session = Depends(db)):
     if data.card_uid and db.scalar(select(Employee).where(Employee.card_uid==data.card_uid)): raise HTTPException(409,"Karta už existuje")
