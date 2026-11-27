@@ -51,7 +51,8 @@ def install(app,Base,engine,db,require_role,audit,persistent):
             with Session(engine) as session:
                 entry=BackupRun(status="running")
                 session.add(entry);session.commit();run_id=entry.id
-            payload=seal(snapshot(Session(engine),Base),os.environ["BACKUP_ENCRYPTION_PASSPHRASE"])
+            with Session(engine) as session:
+                payload=seal(snapshot(session,Base),os.environ["BACKUP_ENCRYPTION_PASSPHRASE"])
             import boto3
             bucket=os.environ["BACKUP_S3_BUCKET"]
             region=os.environ["AWS_REGION"]
