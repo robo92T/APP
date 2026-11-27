@@ -211,17 +211,19 @@ def add_absence(data: AbsenceCreate, db: Session = Depends(db)):
     db.add(a);db.flush();audit(db,"admin","absence.create",str(a.id));db.commit()
     return {"id":a.id,"status":a.status}
 @app.post("/api/absences/{absence_id}/approve", dependencies=[Depends(admin)])
-def approve(absence_id:int, db:Session=Depends(db)):
+def approve(absence_id:int, actor=Depends(admin),db:Session=Depends(db)):
     a=db.get(Absence,absence_id)
     if not a: raise HTTPException(404,"Neprítomnosť neexistuje")
+    if actor.employee_id==a.employee_id:raise HTTPException(403,"Vlastnú žiadosť nemožno schváliť")
     if is_closed_range(db,a.start,a.end):raise HTTPException(409,"Zvolené obdobie je uzavreté")
     if a.status != "pending":raise HTTPException(409,"Žiadosť už nie je v stave čaká")
     a.status="approved";audit(db,"admin","absence.approve",str(a.id));db.commit()
     return {"status":a.status}
 @app.post("/api/absences/{absence_id}/reject", dependencies=[Depends(admin)])
-def reject_absence(absence_id:int,db:Session=Depends(db)):
+def reject_absence(absence_id:int,actor=Depends(admin),db:Session=Depends(db)):
     a=db.get(Absence,absence_id)
     if not a:raise HTTPException(404,"Neprítomnosť neexistuje")
+    if actor.employee_id==a.employee_id:raise HTTPException(403,"Vlastnú žiadosť nemožno vybaviť")
     if is_closed_range(db,a.start,a.end):raise HTTPException(409,"Zvolené obdobie je uzavreté")
     if a.status!="pending":raise HTTPException(409,"Žiadosť už nie je v stave čaká")
     a.status="rejected"
