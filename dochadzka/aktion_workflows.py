@@ -9,6 +9,7 @@ Bulk absences are explicit HR actions with validation, one DB transaction,
 audit trail, duplicate/overlap protection and preview without writes.
 """
 from datetime import date,datetime,timedelta,timezone
+from calendar import monthrange
 from typing import Optional,Literal
 from fastapi import Depends, HTTPException, Query
 from pydantic import BaseModel,Field
@@ -72,7 +73,7 @@ def install(app,Base,Employee,Absence,engine,db,current_account,require_role,aud
             "rows":[{"employee_id":p.id,"name":p.name,"status":serialize(entries[p.id]) if p.id in entries
                 else {"status":"pending","reviewed_at":None,"confirmed_at":None,
                       "reviewed_by":None,"confirmed_by":None,"note":""}}
-                for p in people if p.start_date<=date(year,month,28) and
+                for p in people if p.start_date<=date(year,month,monthrange(year,month)[1]) and
                     (p.end_date is None or p.end_date>=date(year,month,1))]}
     @app.get("/api/workflow/my-month")
     def my_status(year:int=Query(ge=2020,le=2100),month:int=Query(ge=1,le=12),
@@ -167,14 +168,14 @@ def install(app,Base,Employee,Absence,engine,db,current_account,require_role,aud
             EmployeeMonthReview.employee_id.in_(payload.employee_ids),
             EmployeeMonthReview.confirmed_at.isnot(None))).all()
         for row in review_rows:
-            if date(row.year,row.month,1)<=payload.end and date(row.year,row.month,28)>=payload.start:
+            if date(row.year,row.month,1)<=payload.end and date(row.year,row.month,monthrange(row.year,row.month)[1])>=payload.start:
                 raise HTTPException(409,"Dochádzka zamestnanca je už potvrdená")
         result={"dry_run":payload.dry_run,"count":len(targets),"employee_ids":payload.employee_ids,
             "kind":payload.kind,"start":payload.start,"end":payload.end}
         if payload.dry_run:return result
         for e in targets:
             session.add(Absence(employee_id=e.id,kind=payload.kind,start=payload.start,end=payload.end,
-                minutes=payload.minutes,status="approved" if payload.kind in NOTIFICATION else "approved",
+                minutes=payload.minutes,status="approved",
                 note="Hromadný záznam HR: "+payload.reason))
         audit(session,actor.username,"absence.bulk",f"{len(targets)} people {payload.kind} {payload.start}:{payload.end} {payload.reason[:100]}")
         session.commit()
