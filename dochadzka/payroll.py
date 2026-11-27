@@ -12,6 +12,7 @@ from fastapi import Depends, HTTPException, Query
 from fastapi.responses import StreamingResponse
 from sqlalchemy import DateTime, Date, ForeignKey, Integer, String, UniqueConstraint, select
 from sqlalchemy.orm import Mapped, mapped_column, Session
+from time_engine import calculate
 
 class ClosingError(Exception):
     pass
@@ -54,15 +55,16 @@ def install(app,Base,Employee,Absence,engine,db,require_role,audit,build_rows,Ev
         until_time=datetime.combine(end+timedelta(days=2),datetime.min.time(),tz).astimezone(timezone.utc)
         output=StringIO()
         writer=csv.writer(output,delimiter=";",lineterminator="\r\n")
-        writer.writerow(["osobne_cislo_interny_id","meno","obdobie","fond_min","odpracovane_min","zapoctene_volno_min","saldo_min","upozornenia"])
+        writer.writerow(["osobne_cislo_interny_id","meno","obdobie","fond_min","odpracovane_min","zapoctene_volno_min","saldo_min","nocna_praca_min","sobota_min","nedela_min","sviatok_informacne_min","upozornenia"])
         for employee in session.scalars(select(Employee).order_by(Employee.name)).all():
             events=session.scalars(select(Event).where(Event.employee_id==employee.id,Event.at>=from_time,Event.at<until_time).order_by(Event.at,Event.id)).all()
             absences=session.scalars(select(Absence).where(Absence.employee_id==employee.id,Absence.status=="approved",Absence.start<=end,Absence.end>=start)).all()
             shifts={s.day:s.planned_minutes for s in session.scalars(select(Shift).where(Shift.employee_id==employee.id,Shift.day>=start,Shift.day<=end)).all()}
             rows=build_rows(employee,events,shifts,absences,year,month)
             plan=sum(x["plan"] for x in rows);work=sum(x["worked"] for x in rows);credited=sum(x["credit"] for x in rows)
-            warnings=sum(len(x["warnings"]) for x in rows)
-            writer.writerow([employee.id,employee.name,f"{year}-{month:02d}",plan,work,credited,work+credited-plan,warnings])
+            categories=calculate(events,start,end)
+            warnings=sum(len(x["warnings"]) for x in rows)+len(categories["warnings"])
+            writer.writerow([employee.id,employee.name,f"{year}-{month:02d}",plan,work,credited,work+credited-plan,categories["night_minutes"],categories["saturday_minutes"],categories["sunday_minutes"],categories["holiday_label_minutes"],warnings])
         content=("\ufeff"+output.getvalue()).encode("utf-8")
         name=f"mzdy_dochadzka_{year}_{month:02d}.csv"
         return StreamingResponse(iter([content]),media_type="text/csv; charset=utf-8",headers={"Content-Disposition":f'attachment; filename="{name}"',"Cache-Control":"no-store"})
