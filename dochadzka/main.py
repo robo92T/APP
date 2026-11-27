@@ -375,6 +375,9 @@ install_legal_entitlements(app,Base,Employee,Absence,Shift,engine,db,require_rol
 from exports_v2 import install as install_export_profiles
 install_export_profiles(app,Base,Employee,Event,Absence,Shift,engine,db,require_role,audit,__import__("pdf_reports").build_rows)
 
+from quality_checks import install as install_quality_checks
+install_quality_checks(app,Employee,Event,Base,db,require_role)
+
 # Explicitly-gated fake preview dataset. No seed on any production/PostgreSQL DB.
 from demo_seed import seed_preview
 seed_preview(Base,engine,Employee,Event,Absence,Shift,audit)
