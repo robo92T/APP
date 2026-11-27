@@ -15,6 +15,16 @@ class ShiftIn(BaseModel):
     start_time:str="08:00"
     end_time:str="16:00"
     note:str=Field(default="",max_length=200)
+class CycleIn(BaseModel):
+    employee_id:int
+    start:date
+    end:date
+    cycle:str=Field(default="D-N-V-V",max_length=64)
+    offset:int=Field(default=0,ge=0,le=365)
+    overwrite:bool=False
+    day_minutes:int=Field(default=720,ge=0,le=1440)
+    night_minutes:int=Field(default=720,ge=0,le=1440)
+
 def install(app,Base,Employee,Event,Absence,engine,db,admin,audit):
     class Shift(Base):
         __tablename__="shift"
@@ -44,6 +54,35 @@ def install(app,Base,Employee,Event,Absence,engine,db,admin,audit):
         s.planned_minutes=p.planned_minutes;s.start_time=p.start_time;s.end_time=p.end_time;s.note=p.note
         audit(session,"admin","shift.save",f"{p.employee_id}/{p.day}");session.commit()
         return {"success":True}
+    @app.post("/api/shifts/generate-cycle",dependencies=[Depends(admin)])
+    def generate_cycle(p:CycleIn,session:Session=Depends(db)):
+        """D-N-V-V 24/7 sequence. Values are HR-confirmed planned minutes, not law-derived."""
+        if not session.get(Employee,p.employee_id):raise HTTPException(404,"Zamestnanec neexistuje")
+        if p.end<p.start or (p.end-p.start).days>366:raise HTTPException(422,"Rozsah je maximálne 367 dní")
+        kinds=[x.strip().upper() for x in p.cycle.split("-")]
+        if not kinds or any(x not in ("D","N","V","R","P") for x in kinds):raise HTTPException(422,"Cyklus povoľuje D, N, R, P, V")
+        day=p.start
+        created=0;skipped=0
+        while day<=p.end:
+            if session.execute(text("SELECT 1 FROM month_close WHERE year=:year AND month=:month"),{"year":day.year,"month":day.month}).first():
+                raise HTTPException(409,f"Uzavretý mesiac {day.year}-{day.month:02d}")
+            day+=timedelta(days=1)
+        day=p.start
+        while day<=p.end:
+            kind=kinds[((day-p.start).days+p.offset)%len(kinds)]
+            rule={"D":("06:00","18:00",p.day_minutes),"N":("18:00","06:00",p.night_minutes),"R":("06:00","14:00",450),"P":("14:00","22:00",450),"V":("00:00","00:00",0)}[kind]
+            existing=session.scalar(select(Shift).where(Shift.employee_id==p.employee_id,Shift.day==day))
+            if existing and not p.overwrite:skipped+=1
+            else:
+                record=existing or Shift(employee_id=p.employee_id,day=day)
+                record.start_time=rule[0];record.end_time=rule[1];record.planned_minutes=rule[2]
+                record.note=f"Cyklus {p.cycle} · {kind}; plánované minúty potvrďte personalistom"
+                if not existing:session.add(record)
+                created+=1
+            day+=timedelta(days=1)
+        audit(session,"hr","shifts.cycle.generate",f"{p.employee_id}:{p.start}/{p.end}:{created}")
+        session.commit()
+        return {"created_or_updated":created,"skipped":skipped,"warning":"Zmeny nad 12 h, prestávky a minimálne odpočinky vyžadujú samostatnú kontrolu."}
     @app.get("/api/saldo/{employee_id}",dependencies=[Depends(admin)])
     def saldo(employee_id:int,start:date,end:date,session:Session=Depends(db)):
         e=session.get(Employee,employee_id)
