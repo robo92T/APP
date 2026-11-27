@@ -97,8 +97,8 @@ def install(app,Base,Employee,Event,Absence,Shift,engine,db,require_role,audit,b
                 Event.at>=minutc,Event.at<maxutc).order_by(Event.at,Event.id)).all()
             absences=session.scalars(select(Absence).where(Absence.employee_id==emp.id,
                 Absence.start<=end,Absence.end>=start)).all()
-            shifts={x.day:x.planned_minutes for x in session.scalars(select(Shift).where(
-                Shift.employee_id==emp.id,Shift.day>=start,Shift.day<=end)).all()}
+            shifts={x.day:x for x in session.scalars(select(Shift).where(
+                Shift.employee_id==emp.id,Shift.day>=start-timedelta(days=1),Shift.day<=end)).all()}
             approved=[a for a in absences if a.status=="approved"]
             daily=build_rows(emp,punch,shifts,approved,year,month)
             num=personal_map.get(emp.id,str(emp.id))
