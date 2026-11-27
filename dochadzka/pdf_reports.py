@@ -42,63 +42,127 @@ def minutes_label(value):
     return f"{sign}{abs(v)//60}:{abs(v)%60:02d}"
 
 def build_rows(employee,events,shifts,absences,year,month):
-    """Daily events are matched sequentially, with overnight punches credited to arrival day."""
+    """Split completed work and breaks at local midnight, including month boundaries.
+
+    Shift entries may be integer minutes, ORM Shift objects or dicts with
+    planned_minutes/start_time/end_time. Entire periods containing explicit
+    shifts are treated as individually scheduled; unscheduled days have zero
+    fund in that mode. Payroll must review partial rosters.
+    """
     first=date(year,month,1)
     last=date(year,month,monthrange(year,month)[1])
     daily_ref=employee.weekly_minutes/max(1,employee.work_days)
-    rows={first+timedelta(days=n):{"ins":[],"outs":[],"minutes":0,"breaks":0,"warnings":[]} for n in range((last-first).days+1)}
-    state=None
-    pause=None
-    pause_minutes=0
-    for event in events:
-        at=event.at.replace(tzinfo=timezone.utc) if event.at.tzinfo is None else event.at.astimezone(timezone.utc)
-        kind=event.kind
+    rows={first+timedelta(days=n):{"ins":[],"outs":[],"minutes":0,
+        "breaks":0,"warnings":[]} for n in range((last-first).days+1)}
+    plan_by_day={day:0 for day in rows}
+    explicit=bool(shifts)
+    def normalize(at):
+        return at.replace(tzinfo=timezone.utc) if at.tzinfo is None else at.astimezone(timezone.utc)
+    def allocate(start,end,field):
+        # Split in UTC using Bratislava local midnight for daylight-saving safety.
+        cursor=start
+        while cursor<end:
+            d=cursor.astimezone(TZ).date()
+            next_midnight=datetime.combine(d+timedelta(days=1),time.min,TZ).astimezone(timezone.utc)
+            limit=min(end,next_midnight)
+            if d in rows:
+                rows[d][field]+=max(0,int((limit-cursor).total_seconds()//60))
+            cursor=limit
+    for shift_day,shift in shifts.items():
+        if isinstance(shift,(int,float)):
+            if shift_day in plan_by_day:plan_by_day[shift_day]+=int(shift)
+            continue
+        def value(field):
+            return shift.get(field) if isinstance(shift,dict) else getattr(shift,field)
+        planned=int(value("planned_minutes"))
+        start_hm=value("start_time")
+        end_hm=value("end_time")
+        if not start_hm or not end_hm or planned<=0:
+            if shift_day in plan_by_day:plan_by_day[shift_day]+=max(0,planned)
+            continue
+        begin_dt=datetime.combine(shift_day,datetime.strptime(start_hm,"%H:%M").time(),TZ)
+        end_dt=datetime.combine(shift_day,datetime.strptime(end_hm,"%H:%M").time(),TZ)
+        if end_dt<=begin_dt:end_dt+=timedelta(days=1)
+        full_minutes=max(1,int((end_dt-begin_dt).total_seconds()//60))
+        cursor=begin_dt.astimezone(timezone.utc)
+        stop=end_dt.astimezone(timezone.utc)
+        assigned=0
+        while cursor<stop:
+            d=cursor.astimezone(TZ).date()
+            nxt=datetime.combine(d+timedelta(days=1),time.min,TZ).astimezone(timezone.utc)
+            finish=min(nxt,stop)
+            piece=max(0,int((finish-cursor).total_seconds()//60))
+            amount=planned-assigned if finish==stop else round(planned*piece/full_minutes)
+            if d in plan_by_day:plan_by_day[d]+=amount
+            assigned+=amount
+            cursor=finish
+    if not explicit:
+        for day in plan_by_day:
+            if day.weekday()<employee.work_days and is_workday(day):
+                plan_by_day[day]=round(daily_ref)
+
+    session_start=None
+    pause_start=None
+    pauses=[]
+    for event in sorted(events,key=lambda e:(normalize(e.at),getattr(e,"id",0))):
+        kind=event.kind;at=normalize(event.at)
+        if kind=="void":continue
         if kind=="in":
-            if state is not None:
-                day=state.astimezone(TZ).date()
+            if session_start is not None:
+                day=session_start.astimezone(TZ).date()
                 if day in rows:rows[day]["warnings"].append("Dvojitý príchod")
             else:
-                state=at;pause=None;pause_minutes=0
+                session_start=at;pause_start=None;pauses=[]
         elif kind=="break_start":
-            if state is not None and pause is None:pause=at
+            if session_start is not None and pause_start is None:pause_start=at
         elif kind=="break_end":
-            if pause is not None:
-                pause_minutes+=max(0,int((at-pause).total_seconds()//60));pause=None
+            if pause_start is not None:
+                pauses.append((pause_start,at));pause_start=None
         elif kind=="out":
-            if state is None:continue
-            day=state.astimezone(TZ).date()
-            if pause is not None:
-                pause_minutes+=max(0,int((at-pause).total_seconds()//60))
-            if day in rows:
-                worked=max(0,int((at-state).total_seconds()//60)-pause_minutes)
-                rows[day]["ins"].append(state)
-                rows[day]["outs"].append(at)
-                rows[day]["minutes"]+=worked
-                rows[day]["breaks"]+=pause_minutes
-            state=None;pause=None;pause_minutes=0
-    if state is not None:
-        day=state.astimezone(TZ).date()
-        if day in rows:rows[day]["warnings"].append("Neuzavretý príchod")
-    credited_kinds={"vacation","doctor","accompany","paid_leave","wedding","funeral","blood_donation","training","business_trip"}
+            if session_start is None:continue
+            if pause_start is not None:
+                pauses.append((pause_start,at));pause_start=None
+            work_spans=[(session_start,at)]
+            for a,b in pauses:
+                if b<=a:continue
+                adjusted=[]
+                for lo,hi in work_spans:
+                    if b<=lo or a>=hi:adjusted.append((lo,hi))
+                    else:
+                        if lo<a:adjusted.append((lo,a))
+                        if b<hi:adjusted.append((b,hi))
+                work_spans=adjusted
+                allocate(a,b,"breaks")
+            for lo,hi in work_spans:
+                if hi>lo:allocate(lo,hi,"minutes")
+            arrival_day=session_start.astimezone(TZ).date()
+            leave_day=at.astimezone(TZ).date()
+            if arrival_day in rows:rows[arrival_day]["ins"].append(session_start)
+            if leave_day in rows:rows[leave_day]["outs"].append(at)
+            session_start=None;pauses=[]
+    if session_start is not None:
+        day=session_start.astimezone(TZ).date()
+        if day in rows:rows[day]["warnings"].append("Neuzatvorený príchod")
+    credited_kinds={"vacation","doctor","accompany","paid_leave","wedding",
+        "funeral","blood_donation","training","business_trip"}
     output=[]
     for day,rec in rows.items():
-        applicable= employee.start_date<=day and (employee.end_date is None or day<=employee.end_date)
-        shift=shifts.get(day)
-        plan=(shift if shift is not None else round(daily_ref) if day.weekday()<employee.work_days and is_workday(day) else 0) if applicable else 0
-        categories=[]
-        credit=0
-        for a in absences:
-            if a.start<=day<=a.end:
-                categories.append(a.kind)
-                if a.kind in credited_kinds:
-                    credit+=a.minutes if a.minutes is not None and a.start==a.end else plan
+        applicable=employee.start_date<=day and (employee.end_date is None or day<=employee.end_date)
+        plan=plan_by_day[day] if applicable else 0
+        categories=[];credit=0
+        for absence in absences:
+            if absence.start<=day<=absence.end:
+                categories.append(absence.kind)
+                if absence.kind in credited_kinds:
+                    credit+=absence.minutes if absence.minutes is not None and absence.start==absence.end else plan
         credit=min(credit,plan)
         if credit and rec["minutes"]:rec["warnings"].append("Prekryv práce a voľna")
         first_in=rec["ins"][0] if rec["ins"] else None
         last_out=rec["outs"][-1] if rec["outs"] else None
         output.append({"day":day,"in":first_in,"out":last_out,
             "worked":rec["minutes"],"breaks":rec["breaks"],"plan":plan,"credit":credit,
-            "saldo":rec["minutes"]+credit-plan,"absence":", ".join(sorted(set(categories))),"warnings":rec["warnings"]})
+            "saldo":rec["minutes"]+credit-plan,
+            "absence":", ".join(sorted(set(categories))),"warnings":rec["warnings"]})
     return output
 
 def make_pdf(employee,rows,year,month):
@@ -177,8 +241,8 @@ def install(app,Employee,Event,Absence,db,require_role,current_account):
         to_utc=datetime.combine(end+timedelta(days=2),time.min,TZ).astimezone(timezone.utc)
         events=session.scalars(select(Event).where(Event.employee_id==employee_id,Event.at>=from_utc,Event.at<to_utc).order_by(Event.at,Event.id)).all()
         absences=session.scalars(select(Absence).where(Absence.employee_id==employee_id,Absence.status=="approved",Absence.start<=end,Absence.end>=begin)).all()
-        shift_rows=session.execute(text("SELECT day, planned_minutes FROM shift WHERE employee_id=:id AND day>=:first AND day<=:last"),{"id":employee_id,"first":begin.isoformat(),"last":end.isoformat()}).all()
-        shifts={date.fromisoformat(str(row[0])):int(row[1]) for row in shift_rows}
+        shift_rows=session.execute(text("SELECT day, planned_minutes, start_time, end_time FROM shift WHERE employee_id=:id AND day>=:first AND day<=:last"),{"id":employee_id,"first":(begin-timedelta(days=1)).isoformat(),"last":end.isoformat()}).all()
+        shifts={date.fromisoformat(str(row[0])):{"planned_minutes":int(row[1]),"start_time":row[2],"end_time":row[3]} for row in shift_rows}
         rows=build_rows(employee,events,shifts,absences,year,month)
         pdf=make_pdf(employee,rows,year,month)
         filename=f"dochadzka_{employee_id}_{year}_{month:02d}.pdf"
