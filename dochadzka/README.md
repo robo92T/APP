@@ -8,11 +8,11 @@ cd dochadzka
 python -m venv .venv
 source .venv/bin/activate  # Windows: .venv\\Scripts\\activate
 pip install -r requirements.txt
-export ADMIN_API_KEY='nahodny-dlhy-admin-kluc'
+export AUTH_SECRET='nahodny-dlhy-tajny-kluc-aspon-32-znakov'\nexport BOOTSTRAP_ADMIN_USERNAME='admin'\nexport BOOTSTRAP_ADMIN_PASSWORD='silne-heslo-minimalne-12-znakov'
 export TERMINAL_API_KEY='iny-nahodny-terminal-kluc'
 uvicorn main:app --reload
 ```
-API dokumentácia: http://127.0.0.1:8000/docs . Hlavička na admin endpointoch: `X-Admin-Key`; na termináli: `X-Terminal-Key`. Neukladajte kľúče do GitHubu, nezapínajte `--reload` v produkcii. V SQLite sa databáza vytvorí pri prvom spustení.
+API dokumentácia: http://127.0.0.1:8000/docs . Admin endpointy vyžadujú `Authorization: Bearer <JWT>` získaný cez `POST /api/auth/login`; terminál používa `X-Terminal-Key`. Neukladajte kľúče do GitHubu, nezapínajte `--reload` v produkcii. V SQLite sa databáza vytvorí pri prvom spustení.
 
 ## Už implementované
 - Zamestnanci, úväzok, referenčný počet pracovných dní, dátum nástupu, RFID UID karty.
@@ -20,7 +20,7 @@ API dokumentácia: http://127.0.0.1:8000/docs . Hlavička na admin endpointoch: 
 - Príchod, odchod, prestávka, ochrana pred dvojitým pípnutím do 10 sekúnd, nezatvorené udalosti ako upozornenia.
 - Žiadosť o neprítomnosť, schválenie, audit udalostí.
 - Základný prehľad odpracovaných minút; informatívne ročné čerpanie dovolenky, lekára a sprevádzania.
-- Kalendár názvov slovenských sviatkov z knižnice holidays. **Pozor:** knižnica sama o sebe nesmie určovať zákonný pracovný fond: 1. september a 17. november sú pracovnými dňami a v roku 2026 aj 8. máj a 15. september. Výpočet pracovných dní v aktuálnom MVP nie je preto právne spoľahlivý; pred nasadením ho nahradí vlastný verzovaný kalendár výnimiek.
+- Kalendár názvov slovenských sviatkov z knižnice holidays. **Pozor:** knižnica sama o sebe nesmie určovať zákonný pracovný fond: 1. september a 17. november sú pracovnými dňami a v roku 2026 aj 8. máj a 15. september. Výpočet pracovných dní používa vlastné výnimky cez `legal_calendar.py`, no musí byť právne revidovaný pri každej legislatívnej zmene.
 - Neprítomnosti: dovolenka, lekár, sprevádzanie, neplatený lekár, neplatené sprevádzanie, PN, OČR, materská, otcovská, rodičovská, neplatené/platené voľno, služobná cesta, školenie, svadba, pohreb, darovanie krvi a iné.
 
 ## Raspberry Pi
@@ -69,3 +69,23 @@ Tento prototyp nemá offline queue, deduplikáciu udalostí po odpojení ani kry
 - NIP 8. máj a 15. september 2026: https://www.ip.gov.sk/pracovnopravne-vztahy/pracovny-cas-doba-odpocinku/sviatky-8-maj-15-september-2026-z-pohladu-pracovneho-prava.html
 
 Žiadna časť tohto prototypu sa nesmie považovať za právne alebo mzdové posúdenie konkrétneho zamestnanca.
+
+## Webové rozhranie a prihlasovanie (pridané)
+- Jednostránkový responzívny frontend `frontend/index.html`, `frontend/style.css`, `frontend/app.js`; FastAPI ho podáva na `/`.
+- Používateľské meno a heslo, PBKDF2-SHA256 (600 000 iterácií), JWT s expiráciou 8 hodín; roly admin/hr/manager/employee/auditor (prvá úroveň).
+- Administratívne endpointy už vyžadujú Bearer token, nie pôvodný `X-Admin-Key`. Súčasné administratívne oprávnenia **nie sú dostatočne jemné**: manager/hr/auditor majú prístup k väčšine admin GET/POST API. Pred ostrým nasadením dokončiť per-employee/per-division RBAC a rozlíšiť zápis od čítania.
+- Úvodná obrazovka, dashboard, správa zamestnancov, absencie/schvaľovanie, plánovanie zmien, výkazy, saldo a informačná stránka terminálov.
+- Pridali sa endpointy `GET/POST /api/shifts` a `GET /api/saldo/{employee_id}?start=YYYY-MM-DD&end=YYYY-MM-DD`. Saldo je iba informatívne a **nedokáže spoľahlivo spracovať cezpolnočné smeny**.
+- Pridané testy pre heslá a kalendár, GitHub Actions CI workflow (testy musia úspešne prebehnúť pred označením za overené).
+
+### Lokálne spustenie frontend + backend cez Docker
+1. Skopíruj `.env.example` do `.env`. Vygeneruj tri **odlišné** silné tajné hodnoty pre `AUTH_SECRET`, `BOOTSTRAP_ADMIN_PASSWORD` a `TERMINAL_API_KEY`; ponechanie ukážkových hodnôt je nebezpečné.
+2. V adresári `dochadzka` spusti `docker compose up --build -d`.
+3. Otvor `http://localhost:8000`. Prihlás sa prihlasovacím menom z `BOOTSTRAP_ADMIN_USERNAME` a heslom `BOOTSTRAP_ADMIN_PASSWORD`. Admin konto sa vytvára iba pri úplne prázdnej tabuľke účtov.
+4. Odstráň `BOOTSTRAP_ADMIN_PASSWORD` z prostredia po vytvorení konta, urob zálohu dátového volume a bezpečne si uschovaj heslo.
+5. Pre vzdialený prístup je nevyhnutné TLS, reverzný proxy, firewall, zálohovanie, silná autentifikácia a dokončené autorizácie.
+
+**Dôležité:** Docker Compose viaže port iba na localhost zámerne. Vystaviť aktuálny prototyp priamo na internet s reálnymi osobnými údajmi nie je bezpečné. Prihlasovanie samo osebe neznamená pripravenosť na GDPR alebo mzdovú prevádzku.
+
+### Otvorené položky pred produkciou
+Pravidlá rolí, zápis a schvaľovanie zmien pípnutí, zamykanie mesačnej uzávierky, pravé viacúrovňové workflow, mzdové exporty, podrobný zákonný nárok na dovolenku, diferenciácia druhu platených prekážok, bezpečné offline RFID/anti-replay, opravy cezpolnočných zmien, migrácie a zálohovanie databázy, frontend testy, MFA/SSO, bezpečnosť a nasadenie.
