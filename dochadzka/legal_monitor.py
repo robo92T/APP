@@ -336,5 +336,29 @@ def install(app,Base,engine,db,require_role,audit):
                  "approved_at":v.approved_at,"reason":v.reason,
                  "source_notice_id":v.source_notice_id} for v in versions]
 
+    @app.post("/api/legal-monitor/history/{version_id}/rollback",dependencies=[Depends(require_role("admin"))])
+    def rollback(version_id:int,decision:Decision,actor=Depends(require_role("admin")),
+                 session:Session=Depends(db)):
+        """Audit a new compensating rule version; never delete history."""
+        target=session.get(RuleVersion,version_id)
+        if not target:raise HTTPException(404,"Historické pravidlo neexistuje")
+        newest=session.scalar(select(RuleVersion).where(RuleVersion.key==target.key)
+                              .order_by(RuleVersion.effective_date.desc(),RuleVersion.id.desc()).limit(1))
+        if not newest or newest.id!=version_id:
+            raise HTTPException(409,"Zmeniť späť možno iba najnovšiu verziu pravidla")
+        previous=session.scalar(select(RuleVersion).where(
+            RuleVersion.key==target.key,RuleVersion.id<target.id
+        ).order_by(RuleVersion.effective_date.desc(),RuleVersion.id.desc()).limit(1))
+        old_value=previous.value if previous is not None else RULES[target.key]["default"]
+        new=RuleVersion(key=target.key,value=old_value,effective_date=date.today(),
+            source_notice_id=target.source_notice_id,approved_by=actor.username,
+            reason=f"ROLLBACK verzie {version_id}: "+decision.justification)
+        session.add(new);session.flush()
+        audit(session,actor.username,"legal.rule.rollback",
+              f"{target.key}:{target.value}->{old_value};version={target.id};new={new.id}")
+        session.commit()
+        return {"rolled_back_version":version_id,"new_version":new.id,
+                "key":target.key,"restored_value":old_value,"effective_date":new.effective_date}
+
     # Exposed to calculation modules as a controlled DB reader, not a mutable global.
     return effective_rules
