@@ -362,3 +362,7 @@ MonthClose=install_payroll(app,Base,Employee,Absence,engine,db,require_role,audi
 
 from secure_backup import install as install_secure_backup
 install_secure_backup(app,Base,db,require_role,audit)
+
+# Explicitly-gated fake preview dataset. No seed on any production/PostgreSQL DB.
+from demo_seed import seed_preview
+seed_preview(Base,engine,Employee,Event,Absence,Shift,audit)
