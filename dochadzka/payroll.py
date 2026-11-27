@@ -4,6 +4,7 @@ The close is an administrative lock for staff-facing writes. This is not a certi
 payroll close: warnings and legal calculation rules must be reviewed manually.
 """
 import csv
+import os
 from calendar import monthrange
 from datetime import date, datetime, timedelta, timezone
 from io import StringIO
@@ -35,6 +36,22 @@ def install(app,Base,Employee,Absence,engine,db,require_role,audit,build_rows,Ev
         if not 2020<=year<=2100 or not 1<=month<=12:raise HTTPException(422,"Neplatný rok alebo mesiac")
         if session.scalar(select(MonthClose).where(MonthClose.year==year,MonthClose.month==month)):
             raise HTTPException(409,"Mesiac je už uzavretý")
+        if os.getenv("PAYROLL_REQUIRE_CONFIRMATION","false").lower()=="true":
+            reviews=Base.metadata.tables.get("employee_month_review")
+            if reviews is None:raise HTTPException(503,"Modul potvrdení nie je dostupný")
+            period_end=date(year,month,monthrange(year,month)[1])
+            eligible=session.scalars(select(Employee).where(
+                Employee.start_date<=period_end,Employee.active==True
+            )).all()
+            confirmed=set(session.execute(select(reviews.c.employee_id).where(
+                reviews.c.year==year,reviews.c.month==month,
+                reviews.c.confirmed_at.isnot(None)
+            )).scalars().all())
+            missing=[p.id for p in eligible if (p.end_date is None or p.end_date>=date(year,month,1))
+                     and p.id not in confirmed]
+            if missing:
+                raise HTTPException(409,{"message":"Pred uzávierkou chýbajú potvrdenia dochádzky",
+                                         "missing_employee_ids":missing})
         session.add(MonthClose(year=year,month=month,closed_by=account.username))
         audit(session,account.username,"payroll.close",f"{year}-{month:02d}")
         session.commit()
