@@ -1,7 +1,7 @@
 """Pure attendance interval classification. Produces time quantities, NOT statutory premiums."""
 from datetime import datetime, date, time, timedelta, timezone
 from zoneinfo import ZoneInfo
-import holidays
+from legal_calendar import is_premium_holiday
 TZ=ZoneInfo("Europe/Bratislava")
 UTC=timezone.utc
 
@@ -45,7 +45,7 @@ def minutes(start,end):
 
 def split_minutes(intervals,from_day:date,to_day:date):
     """Split by Bratislava calendar days and 22:00-06:00 local night windows."""
-    holiday_dates=set(holidays.country_holidays("SK",years=range(from_day.year,to_day.year+1)))
+    # Salary premium day differs from statutory non-working day in 2026.
     tally={"worked_minutes":0,"night_minutes":0,"saturday_minutes":0,
            "sunday_minutes":0,"holiday_label_minutes":0}
     day=from_day
@@ -62,7 +62,7 @@ def split_minutes(intervals,from_day:date,to_day:date):
             tally["worked_minutes"]+=val
             if day.weekday()==5:tally["saturday_minutes"]+=val
             if day.weekday()==6:tally["sunday_minutes"]+=val
-            if day in holiday_dates:tally["holiday_label_minutes"]+=val
+            if is_premium_holiday(day):tally["holiday_label_minutes"]+=val
             for na,nb in ((start,night_morning_end),(night_evening_start,finish)):
                 lo=max(a,na);hi=min(b,nb)
                 if hi>lo:tally["night_minutes"]+=minutes(lo,hi)
