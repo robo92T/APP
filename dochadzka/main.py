@@ -301,3 +301,6 @@ install_scheduling(app,Base,Employee,Event,Absence,engine,db,admin,audit)
 
 from mobile_api import install as install_mobile_api
 install_mobile_api(app,Employee,Event,Absence,db,_current_account,audit)
+
+from hr_profiles import install as install_hr_profiles
+install_hr_profiles(app,Base,Employee,engine,db,require_role,audit)
