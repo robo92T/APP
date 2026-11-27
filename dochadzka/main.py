@@ -6,6 +6,7 @@ from decimal import Decimal
 from typing import Optional
 from zoneinfo import ZoneInfo
 import holidays
+from legal_calendar import is_workday
 from fastapi import FastAPI, Depends, Header, HTTPException, Query
 from pydantic import BaseModel, Field
 from sqlalchemy import create_engine, String, Integer, DateTime, Date, ForeignKey, Boolean, select
@@ -130,10 +131,9 @@ def absences(employee_id:Optional[int]=None,year:Optional[int]=None,db:Session=D
     if year:q=q.where(Absence.start<=date(year,12,31),Absence.end>=date(year,1,1))
     return [{"id":a.id,"employee_id":a.employee_id,"kind":a.kind,"start":a.start,"end":a.end,"minutes":a.minutes,"status":a.status,"note":a.note} for a in db.scalars(q).all()]
 def working_dates(start:date,end:date):
-    sk=holidays.country_holidays("SK", years=range(start.year,end.year+1))
     day=start
     while day<=end:
-        if day.weekday()<5 and day not in sk:yield day
+        if is_workday(day):yield day
         day+=timedelta(days=1)
 @app.get("/api/calendar/{year}", dependencies=[Depends(admin)])
 def calendar(year:int):
