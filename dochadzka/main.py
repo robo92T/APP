@@ -359,3 +359,6 @@ install_pdf_reports(app,Employee,Event,Absence,db,require_role,_current_account)
 
 from payroll import install as install_payroll
 MonthClose=install_payroll(app,Base,Employee,Absence,engine,db,require_role,audit,__import__("pdf_reports").build_rows,Event,Shift)
+
+from secure_backup import install as install_secure_backup
+install_secure_backup(app,Base,db,require_role,audit)
