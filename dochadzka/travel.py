@@ -278,6 +278,26 @@ def install(app,Base,Employee,Event,Absence,Shift,engine,db,require_role,audit,i
             "total_tickets":sum(p["meal_ticket_days"] for p in people),
             "travel_meals_eur":float(money(sum(Decimal(str(p["trip_meal_eur"])) for p in people))),
             "note":"Kontrolný výpočet. Práca >4h na pravidelnom pracovisku pri služobnej ceste a nároky pri iných neprítomnostiach vyžadujú potvrdenie HR."}
+    @app.get("/api/meals/month.csv",dependencies=[Depends(require_role("admin","hr"))])
+    def meal_month_csv(year:int=Query(ge=2025,le=2100),month:int=Query(ge=1,le=12),
+                       session:Session=Depends(db)):
+        calculated=meal_month(year,month,session)
+        buf=StringIO()
+        writer=csv.writer(buf,delimiter=";",lineterminator="\r\n")
+        writer.writerow(["Zamestnanec","Dátum","Odpracované min","Fond min","Služobná cesta min",
+            "Nárok na stravovací lístok","Počet lístkov","Stravné z pracovnej cesty EUR",
+            "Minimálna hodnota poukážky EUR","Minimálny príspevok zamestnávateľa EUR","Poznámka"])
+        for person in calculated["employees"]:
+            for day in person["days"]:
+                writer.writerow([person["name"],day["day"],day["worked_minutes"],
+                    day["planned_minutes"],day["trip_minutes"],day["meal_ticket_status"],
+                    day["tickets"],day["trip_meal_eur"],day["ticket_min_value_eur"],
+                    day["employer_min_eur"],day["note"]])
+        payload=("\ufeff"+buf.getvalue()).encode("utf-8")
+        return StreamingResponse(iter([payload]),media_type="text/csv; charset=utf-8",
+            headers={"Cache-Control":"no-store",
+                "Content-Disposition":f'attachment; filename="bid_stravne_{year}_{month:02d}.csv"'})
+
     @app.get("/api/travel/summary.csv",dependencies=[Depends(require_role("admin","hr"))])
     def csv_export(session:Session=Depends(db)):
         items=[serialize(x,session) for x in session.scalars(select(TravelOrder).order_by(TravelOrder.id.desc()).limit(500)).all()]
