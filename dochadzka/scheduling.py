@@ -4,7 +4,7 @@ from zoneinfo import ZoneInfo
 from typing import Optional
 from fastapi import Depends, HTTPException
 from pydantic import BaseModel, Field
-from sqlalchemy import Date, ForeignKey, Integer, String, select
+from sqlalchemy import Date, ForeignKey, Integer, String, select, text
 from sqlalchemy.orm import Mapped, mapped_column, Session
 from legal_calendar import is_workday
 TZ=ZoneInfo("Europe/Bratislava")
@@ -34,6 +34,7 @@ def install(app,Base,Employee,Event,Absence,engine,db,admin,audit):
     @app.post("/api/shifts",dependencies=[Depends(admin)])
     def save_shift(p:ShiftIn,session:Session=Depends(db)):
         if not session.get(Employee,p.employee_id):raise HTTPException(404,"Zamestnanec neexistuje")
+        if session.execute(text("SELECT 1 FROM month_close WHERE year=:year AND month=:month"),{"year":p.day.year,"month":p.day.month}).first():raise HTTPException(409,"Mesiac je uzavretý")
         try:
             datetime.strptime(p.start_time,"%H:%M");datetime.strptime(p.end_time,"%H:%M")
         except ValueError:raise HTTPException(422,"Neplatný čas")
@@ -91,3 +92,4 @@ def install(app,Base,Employee,Event,Absence,engine,db,admin,audit):
             d+=timedelta(days=1)
         totals={k:sum(r[k] for r in records) for k in ("planned_minutes","worked_minutes","credited_minutes","saldo_minutes")}
         return {"employee_id":employee_id,"from":start,"to":end,"totals":totals,"rows":records,"warning":"Len informatívne saldo. Pri cezpolnočných zmenách, nerovnomernom rozvrhu, sviatkoch, platených absenciách a nadčasoch treba samostatné odborné overenie."}
+    return Shift
