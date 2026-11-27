@@ -374,8 +374,17 @@ function groupStatusLabel(state){
  const s=state==='present'?'Prítomný':state==='break'?'Prestávka':state==='absent'?'Neprítomnosť':state==='away'?'Mimo / odpracované':'Bez záznamu';
  return s;
 }
+let groupReportPresetsLoaded={};
 async function groupReportView(){
  const st=groupReportState;
+ if(!groupReportPresetsLoaded[st.mode]){
+   groupReportPresetsLoaded[st.mode]=true;
+   try{const stored=JSON.parse(localStorage.getItem('bid-group-saved-view-'+st.mode)||'null');
+     if(stored&&typeof stored==='object'){
+       for(const key of ['department','status','sortKey','sortDesc','search'])
+         if(Object.prototype.hasOwnProperty.call(stored,key))st[key]=stored[key];
+     }}catch{}
+ }
  $('#content').innerHTML='<div class="group-report"><div class="panel group-report-toolbar"><div class="section-top"><div><h3>Hromadný výkaz dochádzky</h3><span class="muted">Všetci zamestnanci na jednom mieste · denné pípnutia a mesačné časové zložky</span></div><div class="actions"><button id="grColumns" class="secondary">Zobrazené stĺpce</button><button id="grSaveView" class="secondary">Uložiť pohľad</button><button id="grCsv" class="secondary"><span>⇩</span> CSV</button><button id="grXlsx" class="primary"><span>▤</span> Excel</button></div></div><div id="grColumnPicker" class="gr-column-picker hidden"></div><div class="group-report-filter-row"><div class="group-report-toggle"><button id="grDay" class="'+(st.mode==='day'?'selected':'')+'">Denná dochádzka</button><button id="grMonth" class="'+(st.mode==='month'?'selected':'')+'">Mesačný hromadný výkaz</button></div><label class="field"><span>Obdobie</span><input id="grDate" type="'+(st.mode==='day'?'date':'month')+'" value="'+esc(st.mode==='day'?st.day:st.month)+'"></label><label class="field"><span>Útvar</span><select id="grDept"><option value="all">Všetky útvary</option></select></label><label class="field"><span>Stav</span><select id="grStatus"><option value="all">Všetky stavy</option>'+(st.mode==='day'?'<option value="present">Prítomní</option><option value="break">Na prestávke</option><option value="absent">Neprítomnosti</option><option value="away">Mimo / odpracované</option><option value="unrecorded">Bez záznamu</option>':'<option value="errors">S upozorneniami</option><option value="hours">S odpracovanými hodinami</option>')+'</select></label><label class="field gr-search"><span>Hľadať</span><input id="grSearch" placeholder="Meno, osobné číslo, pozícia…" value="'+esc(st.search)+'"></label><button class="secondary" id="grRefresh">Obnoviť</button></div><div class="group-report-legend"><span>● Časy sú z evidovaných RFID záznamov</span><span>● Saldo a zložky sú informatívne</span><span>● Kliknutím na zamestnanca otvoríš detail</span></div></div><div id="grStats" class="group-report-stats"></div><div class="panel group-report-table-panel"><div class="section-top"><div><h3 id="grTableTitle">Prehľad zamestnancov</h3><p class="subtle" id="grCount"></p></div><span class="muted">↔ Tabuľku možno posúvať vodorovne</span></div><div id="grTable" class="group-report-scroll"></div><div id="grTableTotals"></div></div><div class="panel"><div class="notice" id="grDisclaimer">Načítavam údaje…</div></div><div id="grDetail"></div></div>';
  const dateLabel=()=>st.mode==='day'?st.day:st.month;
  const params=()=>st.mode==='day'?'mode=day&day='+encodeURIComponent(st.day):
