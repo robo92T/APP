@@ -389,6 +389,9 @@ install_quality_checks(app,Employee,Event,Base,db,require_role)
 from event_corrections import install as install_event_corrections
 install_event_corrections(app,Base,Employee,Event,engine,db,require_role,audit,is_closed_range)
 
+from backup_worker import install as install_backup_worker
+install_backup_worker(app,Base,engine,db,require_role,audit,DATABASE_IS_PERSISTENT)
+
 # Explicitly-gated fake preview dataset. No seed on any production/PostgreSQL DB.
 from demo_seed import seed_preview
 seed_preview(Base,engine,Employee,Event,Absence,Shift,audit)
