@@ -95,7 +95,7 @@ def test_travel_private_data_requires_login(client):
 def test_meal_csv_export(client,headers):
     response=client.get("/api/meals/month.csv?year=2026&month=11",headers=headers)
     assert response.status_code==200,response.text
-    assert response.content.startswith(b"\\xef\\xbb\\xbf")
+    assert response.content[:3]==bytes([0xEF,0xBB,0xBF])
     assert b"Tamara" in response.content
     assert response.headers["cache-control"]=="no-store"
 
