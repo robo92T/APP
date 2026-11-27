@@ -6,6 +6,7 @@ Employee identity is verified by privileged role; no employee access to others.
 from calendar import monthrange
 from datetime import date, datetime, time, timedelta, timezone
 from io import BytesIO
+from xml.sax.saxutils import escape
 from zoneinfo import ZoneInfo
 from fastapi import Depends, HTTPException, Query
 from fastapi.responses import StreamingResponse
@@ -116,7 +117,7 @@ def make_pdf(employee,rows,year,month):
     story=[]
     story.append(Paragraph("MESAČNÝ VÝKAZ DOCHÁDZKY",title))
     story.append(Spacer(1,3*mm))
-    person=f"{employee.name} · ID {employee.id}"
+    person=f"{escape(employee.name)} · ID {employee.id}"
     summary=Table([[Paragraph("<b>Zamestnanec:</b> "+person,base),
         Paragraph("<b>Obdobie:</b> "+f"{month:02d}/{year}",base),
         Paragraph("<b>Týždenný fond:</b> "+minutes_label(employee.weekly_minutes),base)]],
@@ -140,7 +141,7 @@ def make_pdf(employee,rows,year,month):
         data.append([day.strftime("%d.%m.")+" "+["Po","Ut","St","Št","Pi","So","Ne"][day.weekday()],
             time_label(r["in"]),time_label(r["out"]),minutes_label(r["worked"]),
             minutes_label(r["breaks"]),minutes_label(r["plan"]),minutes_label(r["credit"]),
-            minutes_label(r["saldo"]),Paragraph(annotation or "—",tiny)])
+            minutes_label(r["saldo"]),Paragraph(escape(annotation or "—"),tiny)])
     t=Table(data,repeatRows=1,colWidths=[24*mm,21*mm,21*mm,22*mm,24*mm,21*mm,21*mm,22*mm,65*mm],hAlign="LEFT")
     commands=[("BACKGROUND",(0,0),(-1,0),navy),("TEXTCOLOR",(0,0),(-1,0),colors.white),
       ("FONTNAME",(0,0),(-1,0),"SK-Bold"),("FONTNAME",(0,1),(-1,-1),"SK-Regular"),
