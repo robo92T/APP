@@ -165,7 +165,7 @@ def make_pdf(employee,rows,year,month):
     buffer.seek(0)
     return buffer
 
-def install(app,Employee,Event,Absence,db,require_role):
+def install(app,Employee,Event,Absence,db,require_role,current_account):
     @app.get("/api/reports/monthly/{employee_id}/pdf",dependencies=[Depends(require_role("admin","hr"))])
     def monthly_pdf(employee_id:int,year:int=Query(ge=2020,le=2100),month:int=Query(ge=1,le=12),session:Session=Depends(db)):
         employee=session.get(Employee,employee_id)
@@ -182,3 +182,10 @@ def install(app,Employee,Event,Absence,db,require_role):
         pdf=make_pdf(employee,rows,year,month)
         filename=f"dochadzka_{employee_id}_{year}_{month:02d}.pdf"
         return StreamingResponse(pdf,media_type="application/pdf",headers={"Content-Disposition":f'attachment; filename="{filename}"',"Cache-Control":"no-store"})
+
+    @app.get("/api/me/monthly-pdf")
+    def my_monthly_pdf(year:int=Query(ge=2020,le=2100),month:int=Query(ge=1,le=12),account=Depends(current_account),session:Session=Depends(db)):
+        """An employee may download only their own attendance report."""
+        if account.employee_id is None:
+            raise HTTPException(403,"Účet nie je priradený zamestnancovi")
+        return monthly_pdf(employee_id=account.employee_id,year=year,month=month,session=session)
