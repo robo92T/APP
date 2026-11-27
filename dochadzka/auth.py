@@ -50,6 +50,12 @@ def install(app, Base, Employee, engine, db, audit):
             if session.scalar(select(Account).limit(1)) is None:
                 session.add(Account(username=bootstrap_user,password_hash=make_hash(bootstrap_password),role="admin"))
                 session.commit()
+            elif os.getenv("ONE_TIME_ADMIN_RESET") == "true":
+                target = session.scalar(select(Account).where(Account.username == bootstrap_user, Account.role == "admin"))
+                if target:
+                    target.password_hash = make_hash(bootstrap_password)
+                    audit(session, "system", "admin.password.reset", "operator initiated")
+                    session.commit()
     secret=os.getenv("AUTH_SECRET","")
     def current(request:Request,session:Session=Depends(db)):
         bearer=request.headers.get("Authorization","")
