@@ -110,6 +110,7 @@ def make_pdf(employee,rows,year,month):
     base=ParagraphStyle("base",fontName="SK-Regular",fontSize=8,leading=12,textColor=navy)
     small=ParagraphStyle("small",parent=base,fontSize=7,leading=10)
     tiny=ParagraphStyle("tiny",parent=base,fontSize=6,leading=9)
+    white_header=ParagraphStyle("white_header",parent=small,fontName="SK-Bold",textColor=colors.white)
     title=ParagraphStyle("title",parent=base,fontName="SK-Bold",fontSize=19,leading=24)
     right=ParagraphStyle("right",parent=base,alignment=TA_RIGHT)
     story=[]
@@ -132,7 +133,7 @@ def make_pdf(employee,rows,year,month):
     overview.setStyle(TableStyle([("BACKGROUND",(0,0),(-1,-1),colors.HexColor("#F6F8FC")),("BOX",(0,0),(-1,-1),0.5,colors.HexColor("#DCE4EF")),("VALIGN",(0,0),(-1,-1),"MIDDLE"),("TOPPADDING",(0,0),(-1,-1),10),("BOTTOMPADDING",(0,0),(-1,-1),10)]))
     story.append(overview);story.append(Spacer(1,5*mm))
     header=["Deň","Príchod","Odchod","Práca","Prestávka","Fond","Voľno","Saldo","Druh neprítomnosti / poznámka"]
-    data=[[Paragraph(h,small) for h in header]]
+    data=[[Paragraph(h,white_header) for h in header]]
     for r in rows:
         day=r["day"]
         annotation=", ".join(filter(None,[r["absence"],*r["warnings"]]))
