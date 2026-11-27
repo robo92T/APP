@@ -383,6 +383,9 @@ install_export_profiles(app,Base,Employee,Event,Absence,Shift,engine,db,require_
 from quality_checks import install as install_quality_checks
 install_quality_checks(app,Employee,Event,Base,db,require_role)
 
+from event_corrections import install as install_event_corrections
+install_event_corrections(app,Base,Employee,Event,engine,db,require_role,audit,is_closed_range)
+
 # Explicitly-gated fake preview dataset. No seed on any production/PostgreSQL DB.
 from demo_seed import seed_preview
 seed_preview(Base,engine,Employee,Event,Absence,Shift,audit)
