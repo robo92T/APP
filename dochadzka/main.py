@@ -463,7 +463,11 @@ if os.getenv("APP_ENV") == "preview" and os.getenv("DEMO_SEED") == "10":
     # Optional fake employee account so the self-service calendar can be tested without admin access.
     # Never create or reset real accounts. An existing account is always left unchanged.
     _demo_password = os.getenv("DEMO_EMPLOYEE_PASSWORD", "")
-    if len(_demo_password) >= 12 and DATABASE_IS_PERSISTENT is False:
+    _demo_test_storage = (not DATABASE_IS_PERSISTENT or (
+        engine.dialect.name == "postgresql"
+        and engine.url.database == "sk_dochadzka_db"
+        and os.getenv("ALLOW_DEMO_SEED_ON_POSTGRES") == "true"))
+    if len(_demo_password) >= 12 and _demo_test_storage:
         from auth import make_hash
         with SessionLocal() as _demo_session:
             _demo_emp = _demo_session.scalar(select(Employee).where(
