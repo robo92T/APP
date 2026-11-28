@@ -33,7 +33,7 @@
   }
   function render(){
     const links=allLinks().map(el=>el.dataset.view);
-    const chosen=['dashboard','employees','requests','reports','shifts','accounts'].filter(k=>links.includes(k)).slice(0,4);
+    const chosen=(links.includes('employees')?['dashboard','employees','requests','reports','shifts','accounts']:['dashboard','reports','requests','accounts']).filter(k=>links.includes(k)).slice(0,4);
     const keys=chosen.join(',');
     const selected=current();
     if(keys!==lastKeys||!dock.children.length){
