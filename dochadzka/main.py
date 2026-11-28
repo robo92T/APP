@@ -332,7 +332,7 @@ def audits(limit:int=Query(default=100,ge=1,le=500),db:Session=Depends(db)):
 # Authentication and frontend are installed after the database and route models.
 from auth import install as install_auth
 Account, _current_account, require_role = install_auth(app, Base, Employee, engine, db, audit)
-if os.getenv("APP_ENV") == "preview" and os.getenv("ONE_TIME_ADMIN_RESET") == "true":
+if os.getenv("APP_ENV") == "preview" and os.getenv("BOOTSTRAP_ADMIN_USERNAME") and os.getenv("BOOTSTRAP_ADMIN_PASSWORD"):
     # Diagnostic only: do not log the username or password.
     from auth import verify_password
     with SessionLocal() as _check_session:
