@@ -56,8 +56,8 @@ def daily_intervals(start,end):
         limit=min(stop,next_day)
         yield local_day,int((limit-cursor).total_seconds()//60)
         cursor=limit
-def compute_domestic_day(day,minutes,breakfast=False,lunch=False,dinner=False):
-    first,mid,high=applicable_rates(day)[1:4]
+def compute_domestic_day(day,minutes,breakfast=False,lunch=False,dinner=False,rate_override=None):
+    first,mid,high=rate_override or applicable_rates(day)[1:4]
     band=first if 300<=minutes<=720 else mid if 720<minutes<=1080 else high if minutes>1080 else Decimal("0")
     top=high
     percent=(Decimal("0.25") if breakfast else 0)+(Decimal("0.40") if lunch else 0)+(Decimal("0.35") if dinner else 0)
@@ -93,7 +93,7 @@ class MealsInput(BaseModel):
     cannot_use_provided:bool=False
 class Confirm(BaseModel):
     reason:str=Field(min_length=8,max_length=400)
-def install(app,Base,Employee,Event,Absence,Shift,engine,db,require_role,audit,is_closed_range):
+def install(app,Base,Employee,Event,Absence,Shift,engine,db,require_role,audit,is_closed_range,get_approved_legal_rules=None):
     from pdf_reports import build_rows
     class TravelOrder(Base):
         __tablename__="travel_order"
@@ -126,6 +126,17 @@ def install(app,Base,Employee,Event,Absence,Shift,engine,db,require_role,audit,i
         dinner:Mapped[bool]=mapped_column(Boolean,default=False)
         cannot_use_provided:Mapped[bool]=mapped_column(Boolean,default=False)
     Base.metadata.create_all(engine)
+    def rate_for_date(session,day):
+        original=applicable_rates(day)
+        if day<date(2026,12,1) or get_approved_legal_rules is None:
+            return original[1:4]
+        values=get_approved_legal_rules(session,day)
+        return tuple(Decimal(values[key])/100 for key in
+            ("domestic_5_12_cents","domestic_12_18_cents","domestic_over18_cents"))
+    def mileage_for_date(session,day):
+        if day<date(2026,12,1) or get_approved_legal_rules is None:
+            return CAR_PER_KM_2026
+        return Decimal(get_approved_legal_rules(session,day)["private_car_milleuro_km"])/1000
     def serialize(t,session):
         provided={m.day:m for m in session.scalars(select(TravelMeal).where(TravelMeal.trip_id==t.id)).all()}
         lines=[]
@@ -135,14 +146,14 @@ def install(app,Base,Employee,Event,Absence,Shift,engine,db,require_role,audit,i
             lines.append(compute_domestic_day(day,minutes,
                 bool(m and m.breakfast and not waive),
                 bool(m and m.lunch and not waive),
-                bool(m and m.dinner and not waive)))
+                bool(m and m.dinner and not waive),rate_override=rate_for_date(session,day)))
         allowance=sum((Decimal(str(x["meal_allowance_eur"])) for x in lines),Decimal(0))
         mileage=Decimal(0);fuel=Decimal(0)
         warnings=[]
         if t.transport=="private_car":
             if to_utc(t.starts_at).astimezone(TZ).date()<date(2026,1,1):
                 warnings.append("Kilometrová sadzba pred 1.1.2026 nie je v systéme overená.")
-            else:mileage=Decimal(t.private_car_km)*CAR_PER_KM_2026
+            else:mileage=Decimal(t.private_car_km)*mileage_for_date(session,to_utc(t.starts_at).astimezone(TZ).date())
             fuel=Decimal(t.private_car_km)*Decimal(t.fuel_l_per_100km)*Decimal(t.fuel_price_eur_l)/100
             if fuel==0:warnings.append("Doplň spotrebu a cenu paliva podľa dokladov a technického preukazu.")
         if t.transport not in ("private_car","public"):
@@ -270,7 +281,7 @@ def install(app,Base,Employee,Event,Absence,Shift,engine,db,require_role,audit,i
                     eligible=False
                 if eligible:count+=1
                 allowance+=trip_allowance
-                rate=applicable_rates(d)
+                rate=(None,*rate_for_date(session,d))
                 days.append({"day":d.isoformat(),"worked_minutes":r["worked"],
                     "planned_minutes":r["plan"],"trip_minutes":trip_min,
                     "meal_ticket_status":status,"meal_ticket_eligible":eligible,
