@@ -357,7 +357,7 @@ from remote_work import install as install_remote_work
 install_remote_work(app,Employee,Event,Absence,db,_current_account,audit,is_closed_range)
 
 from mobile_api import install as install_mobile_api
-install_mobile_api(app,Employee,Event,Absence,db,_current_account,audit)
+install_mobile_api(app,Employee,Event,Absence,Shift,db,_current_account,audit)
 
 from nfc_assignment import install as install_nfc_assignment
 install_nfc_assignment(app,Employee,db,require_role,audit)
