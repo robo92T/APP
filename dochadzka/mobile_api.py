@@ -202,6 +202,8 @@ def install(app,Employee,Event,Absence,Shift,db,current_account,audit,require_ro
     @app.post("/api/me/absences",status_code=201)
     def create_absence(data:SelfAbsence,account=Depends(current_account),employee=Depends(mine),session:Session=Depends(db)):
         if data.kind not in ALLOWED:raise HTTPException(422,"Neplatný druh žiadosti")
+        if data.kind=="home_office" and data.minutes is not None:
+            raise HTTPException(422,"Home office je vždy celodenný, po schválení automaticky 8 hodín bez pípania")
         if data.end<data.start or (data.end-data.start).days>366:raise HTTPException(422,"Neplatné obdobie")
         from main import is_closed_range
         if is_closed_range(session,data.start,data.end):raise HTTPException(409,"Zvolené obdobie je uzavreté")
