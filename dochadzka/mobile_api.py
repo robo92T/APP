@@ -1,7 +1,8 @@
 """Self-service employee APIs. Never let a user choose another employee_id."""
 from datetime import datetime, date, time, timedelta, timezone
+from calendar import monthrange
 from zoneinfo import ZoneInfo
-from fastapi import Depends, HTTPException
+from fastapi import Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -14,7 +15,7 @@ class SelfAbsence(BaseModel):
     note: str = Field(default="",max_length=400)
 
 ALLOWED={"vacation","doctor","accompany","doctor_unpaid","accompany_unpaid","unpaid","paid_leave","ocr","sick","home_office","other"}
-def install(app,Employee,Event,Absence,db,current_account,audit):
+def install(app,Employee,Event,Absence,Shift,db,current_account,audit):
     def mine(account=Depends(current_account),session:Session=Depends(db)):
         if account.employee_id is None:raise HTTPException(403,"Účet nie je priradený zamestnancovi")
         employee=session.get(Employee,account.employee_id)
@@ -49,6 +50,36 @@ def install(app,Employee,Event,Absence,db,current_account,audit):
         absences=session.scalars(select(Absence).where(Absence.employee_id==employee.id,Absence.start<nxt,Absence.end>=first)).all()
         requests=[{"id":a.id,"kind":a.kind,"start":a.start.isoformat(),"end":a.end.isoformat(),"status":a.status,"minutes":a.minutes} for a in absences]
         return {"name":employee.name,"period":first.strftime("%Y-%m"),"weekly_minutes":employee.weekly_minutes,"worked_minutes":worked,"last_event":last,"warnings":warnings,"requests":requests,"note":"Odpracované minúty sú orientačné; otvorené zmeny nie sú započítané."}
+    @app.get("/api/me/attendance")
+    def my_attendance(year:int=Query(ge=2020,le=2100),month:int=Query(ge=1,le=12),
+        employee=Depends(mine),session:Session=Depends(db)):
+        from pdf_reports import build_rows
+        tz=ZoneInfo("Europe/Bratislava")
+        begin=date(year,month,1)
+        end=date(year,month,monthrange(year,month)[1])
+        first=datetime.combine(begin-timedelta(days=2),time.min,tz).astimezone(timezone.utc)
+        stop=datetime.combine(end+timedelta(days=2),time.min,tz).astimezone(timezone.utc)
+        evs=session.scalars(select(Event).where(Event.employee_id==employee.id,
+            Event.at>=first,Event.at<stop).order_by(Event.at,Event.id)).all()
+        abss=session.scalars(select(Absence).where(Absence.employee_id==employee.id,
+            Absence.start<=end,Absence.end>=begin,Absence.status=="approved")).all()
+        shifts={r.day:r for r in session.scalars(select(Shift).where(
+            Shift.employee_id==employee.id,Shift.day>=begin-timedelta(days=1),
+            Shift.day<=end)).all()}
+        rows=build_rows(employee,evs,shifts,abss,year,month)
+        result=[]
+        for r in rows:
+            remote=any(a.kind=="home_office" and a.start<=r["day"]<=a.end for a in abss)
+            result.append({"day":r["day"].isoformat(),"in":r["in"].astimezone(tz).strftime("%H:%M") if r["in"] else None,
+                "out":r["out"].astimezone(tz).strftime("%H:%M") if r["out"] else None,
+                "worked_minutes":r["worked"],"planned_minutes":r["plan"],
+                "break_minutes":r["breaks"],"credited_minutes":r["credit"],
+                "saldo_minutes":r["saldo"],"component":"home_office" if remote else r["absence"],
+                "warnings":r["warnings"]})
+        return {"year":year,"month":month,"rows":result,
+            "total_worked_minutes":sum(x["worked_minutes"] for x in result),
+            "total_saldo_minutes":sum(x["saldo_minutes"] for x in result),
+            "note":"Vlastná dochádzka podľa uzavretých pípnutí. Otvorená zmena je zatiaľ nezapočítaná."}
     @app.post("/api/me/absences",status_code=201)
     def create_absence(data:SelfAbsence,account=Depends(current_account),employee=Depends(mine),session:Session=Depends(db)):
         if data.kind not in ALLOWED:raise HTTPException(422,"Neplatný druh žiadosti")
