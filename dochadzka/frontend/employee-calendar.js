@@ -80,8 +80,13 @@ function showAttendanceDay(mode="attendance"){
   return '<div class="bid-event-line"><span class="bid-event-symbol bid-event-'+kind+'">'+icon+'</span><div class="bid-event-main"><strong>'+safe(eventsLabel[x.kind]||x.kind)+'</strong><small>'+safe(x.origin==="demo"?"Ukážkové pípnutie":x.origin==="rfid"?"RFID":"Dochádzkový záznam")+'</small></div><time>'+safe(x.time)+'</time></div>'
  }).join(""):'<p class="bid-empty">Pre tento deň nie sú uložené žiadne príchody ani odchody.</p>';
  const absSection=req.length?'<div class="bid-absence-line"><strong>Neprítomnosti a žiadosti</strong><div class="bid-absence-tags">'+tags+'</div></div>':"";
+ const autoHO=Number(row?.home_office_auto_minutes||0);
+ const homeOfficeNotice=autoHO>0?'<div class="bid-homeoffice-auto"><strong>Home office · '+shortHours(autoHO)+' h automaticky</strong><span>Po schválení je táto pracovná doba započítaná bez príchodu, odchodu a GPS polohy.</span></div>':"";
  const warn=(row?.warnings||[]).length?'<div class="bid-calendar-warnings">Na preverenie: '+safe(row.warnings.join(", "))+'</div>':"";
- detail.innerHTML=head+cards+timelineMarkup(eventsSorted)+'<div class="bid-events-title">Záznamy dňa <span>'+eventsSorted.length+'</span></div><div class="bid-event-list">'+log+'</div>'+absSection+warn+'<p class="bid-timeline-footnote">Celkové hodiny a saldo sa počítajú na serveri. Časová os zobrazuje iba úseky potvrdené pípnutím; automaticky odpočítané prestávky a zmeny cez polnoc nemusia byť na osi úplné.</p>';
+ detail.innerHTML=head+cards+homeOfficeNotice+(autoHO>0?"":timelineMarkup(eventsSorted))+
+   '<div class="bid-events-title">Záznamy dňa <span>'+eventsSorted.length+'</span></div>'+
+   '<div class="bid-event-list">'+log+'</div>'+absSection+warn+
+   '<p class="bid-timeline-footnote">Schválený home office predstavuje automatický záznam 8 hodín bez GPS. Pri terénnej práci časová os zobrazuje len potvrdené pípnutia; nie všetky automatické prestávky.</p>';
 }
 async function openAttendance(year,month,selected){
  const current=fromKey(today());year=year||current.getFullYear();month=month||current.getMonth()+1;
