@@ -22,7 +22,7 @@ ABSENCE_LABELS={
     "sick":"PN","ocr":"OČR","maternity":"Materská dovolenka","paternity":"Otcovská dovolenka",
     "parental":"Rodičovská dovolenka","unpaid":"Neplatené voľno",
     "paid_leave":"Platené voľno","business_trip":"Pracovná cesta",
-    "training":"Školenie","wedding":"Svadba","funeral":"Pohreb",
+    "home_office":"Home office","training":"Školenie","wedding":"Svadba","funeral":"Pohreb",
     "blood_donation":"Darovanie krvi","other":"Iná neprítomnosť"
 }
 DAY_HEADERS=[
@@ -203,6 +203,7 @@ def install(app,Employee,Event,Absence,Shift,Base,db,require_role):
                 on_trip_today=(person.id,current_day) in travel_dates
                 presence=", ".join(ABSENCE_LABELS.get(a.kind,a.kind) for a in today_absences) if today_absences else ("Príchod otvorený*" if state=="present" else "Mimo / bez otvoreného príchodu")
                 if on_trip_today:presence="Služobná cesta"
+                elif any(a.kind=="home_office" for a in today_absences):presence="Home office"
                 warnings=sum(len(r["warnings"]) for r in daily)+len(category["warnings"])
                 out={**common,"presence":presence,
                     "planned_min":totals["plan"],"worked_min":totals["worked"],
