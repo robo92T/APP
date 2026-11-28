@@ -17,10 +17,26 @@ RATES_2026={"night":Decimal("2.1036"),"saturday":Decimal("2.6295"),"sunday":Deci
             "night_risk":Decimal("2.6295")}
 def accounted_intervals(events,employee,shift_map):
     raw,warnings=attendance_intervals(events)
-    has_break_events=any(x.kind in ("break_start","break_end") for x in events)
-    if has_break_events:return raw,warnings
+    ordered=sorted((e for e in events if e.kind!="void"),key=lambda e:(normalize(e.at),getattr(e,"id",0)))
+    sessions=[]
+    arrival=None;explicit=False
+    for event in ordered:
+        at=normalize(event.at)
+        if event.kind=="in":
+            if arrival is None:arrival=at;explicit=False
+        elif event.kind in ("break_start","break_end") and arrival is not None:
+            explicit=True
+        elif event.kind=="out" and arrival is not None:
+            sessions.append((arrival,at,explicit))
+            arrival=None;explicit=False
     result=[]
-    for start,end in raw:
+    for start,end,has_manual_break in sessions:
+        if end<=start:continue
+        pieces=[(max(a,start),min(b,end)) for a,b in raw if b>start and a<end]
+        pieces=[(a,b) for a,b in pieces if b>a]
+        if has_manual_break:
+            result.extend(pieces)
+            continue
         day=start.astimezone(TZ).date()
         shift=shift_map.get(day)
         regime=getattr(employee,"work_regime","fixed")
@@ -28,12 +44,19 @@ def accounted_intervals(events,employee,shift_map):
             ("06:00","18:00",660),("18:00","06:00",660)):
             regime="dispatcher"
         deducted=expected_break(regime,start,end)
-        if deducted<=0:result.append((start,end));continue
+        if deducted<=0:
+            result.extend(pieces)
+            continue
         middle=start+(end-start)/2
         a=middle-timedelta(minutes=deducted//2)
         b=a+timedelta(minutes=deducted)
-        result.extend(((start,a),(b,end)))
+        for lo,hi in pieces:
+            if b<=lo or a>=hi:result.append((lo,hi))
+            else:
+                if lo<a:result.append((lo,a))
+                if b<hi:result.append((b,hi))
     return result,warnings
+
 def summary(events,employee,shift_map,year,month,average_hourly=None,risk_night=False):
     if year!=2026:raise ValueError("Sadzby príplatkov na tento rok ešte nie sú overené")
     from calendar import monthrange
