@@ -21,6 +21,7 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Table, TableStyle, 
 from sqlalchemy import select, text
 from sqlalchemy.orm import Session
 from legal_calendar import is_workday
+from work_rules import expected_break
 
 TZ=ZoneInfo("Europe/Bratislava")
 FONT_PATH="/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
@@ -133,6 +134,26 @@ def build_rows(employee,events,shifts,absences,year,month):
                         if b<hi:adjusted.append((b,hi))
                 work_spans=adjusted
                 allocate(a,b,"breaks")
+            # If no lunch break was punched, deduct the non-working
+            # 30 min TPP / 60 min dispatcher break once for the completed shift.
+            # Do not deduct twice if the employee used explicit break punches.
+            gross_minutes=max(0,int((at-session_start).total_seconds()//60))
+            explicit=sum(max(0,int((hi-lo).total_seconds()//60)) for lo,hi in pauses)
+            automatic=expected_break(getattr(employee,"work_regime","fixed"),
+                                     session_start,at,explicit_break=explicit)
+            if automatic:
+                total_span=max(0,int((at-session_start).total_seconds()//60))
+                midpoint=session_start+timedelta(minutes=total_span//2)
+                b_start=midpoint-timedelta(minutes=automatic//2)
+                b_end=b_start+timedelta(minutes=automatic)
+                next_spans=[]
+                for lo,hi in work_spans:
+                    if b_end<=lo or b_start>=hi:next_spans.append((lo,hi))
+                    else:
+                        if lo<b_start:next_spans.append((lo,b_start))
+                        if b_end<hi:next_spans.append((b_end,hi))
+                work_spans=next_spans
+                allocate(b_start,b_end,"breaks")
             for lo,hi in work_spans:
                 if hi>lo:allocate(lo,hi,"minutes")
             arrival_day=session_start.astimezone(TZ).date()
