@@ -28,7 +28,11 @@ def employee_session(client,admin_headers):
     assert created.status_code==200,created.text
     logged=client.post("/api/auth/login",json=credentials)
     assert logged.status_code==200,logged.text
-    return employee_id,{"Authorization":"Bearer "+logged.json()["access_token"]}
+    employee_headers={"Authorization":"Bearer "+logged.json()["access_token"]}
+    changed=client.post("/api/auth/password",headers=employee_headers,json={
+        "old_password":credentials["password"],"new_password":"ChangedOnlyForHomeOfficeTest2026!"})
+    assert changed.status_code==200,changed.text
+    return employee_id,employee_headers
 
 def test_home_office_approved_day_required_and_server_clock(client,admin_headers,employee_session,monkeypatch):
     emp_id,employee_headers=employee_session
