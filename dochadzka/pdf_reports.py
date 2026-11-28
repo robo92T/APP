@@ -180,16 +180,19 @@ def build_rows(employee,events,shifts,absences,year,month):
         applicable=employee.start_date<=day and (employee.end_date is None or day<=employee.end_date)
         plan=plan_by_day[day] if applicable else 0
         categories=[];credit=0
+        approved_home_office=False
         for absence in absences:
             if absence.start<=day<=absence.end:
                 categories.append(absence.kind)
+                if absence.kind=="home_office" and getattr(absence,"status",None)=="approved":
+                    approved_home_office=True
                 if absence.kind in credited_kinds:
                     credit+=absence.minutes if absence.minutes is not None and absence.start==absence.end else plan
         # Approved full-day home office is an administratively credited 8h workday:
         # no synthetic in/out punches, no device location, no second punch required.
         # Scheduled fund is the ceiling for saldo so a 7.5h contract doesn't acquire
         # artificial overtime from the fixed 8h home-office attendance display.
-        home_office = "home_office" in categories
+        home_office = approved_home_office
         auto_home_office = 0
         if home_office and applicable and plan>0:
             if rec["minutes"] == 0:
