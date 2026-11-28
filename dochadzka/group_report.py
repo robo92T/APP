@@ -14,6 +14,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 from time_engine import calculate
 from pdf_reports import build_rows
+from wage_components import get_mode_minutes,KINDS as WAGE_KINDS,PAYROLL_CREDIT_KINDS
 
 TZ=ZoneInfo("Europe/Bratislava")
 ABSENCE_LABELS={
@@ -31,7 +32,10 @@ DAY_HEADERS=[
     ("first_in","Príchod"),("last_out","Odchod"),("last_punch","Posledný záznam"),
     ("planned_min","Fond (min)"),("worked_min","Odpracované (min)"),
     ("break_min","Prestávky (min)"),("credited_min","Uznané voľno (min)"),
-    ("saldo_min","Saldo (min)"),("component","Zložka / neprítomnosť"),
+    ("saldo_min","Saldo (min)"),("doctor_min","Lekár (min)"),
+    ("accompany_min","Sprevádzanie (min)"),("home_office_min","Home office (min)"),
+    ("business_trip_min","Služobná cesta (min)"),("service_errand_min","Služobné dôvody (min)"),
+    ("travel_duration_min","Trvanie cesty (min)"),("component","Zložka / neprítomnosť"),
     ("warnings","Upozornenia")]
 MONTH_HEADERS=[
     ("personal_number","Os. číslo"),("name","Meno a priezvisko"),
@@ -41,6 +45,8 @@ MONTH_HEADERS=[
     ("credited_min","Uznané voľno (min)"),("saldo_min","Saldo (min)"),
     ("vacation_min","Dovolenka (min)"),("doctor_min","Lekár (min)"),
     ("accompany_min","Sprevádzanie (min)"),
+    ("home_office_min","Home office (min)"),("business_trip_min","Služobná cesta (min)"),
+    ("service_errand_min","Služobné dôvody (min)"),("travel_duration_min","Trvanie cesty (min)"),
     ("other_absence_min","Ostatné voľno (min)"),
     ("night_min","Nočné (min)"),("saturday_min","Sobota (min)"),
     ("sunday_min","Nedeľa (min)"),("holiday_min","Sviatok (min)"),
@@ -67,7 +73,7 @@ def state_for_date(events,asof):
     if last.kind=="break_start":return "break",utc_time(last.at)
     return "away",utc_time(last.at)
 
-def install(app,Employee,Event,Absence,Shift,Base,db,require_role):
+def install(app,Employee,Event,Absence,Shift,WageComponent,Base,db,require_role):
     from time_engine import calculate
     @app.get("/api/group-report",dependencies=[Depends(require_role("admin","hr"))])
     def group_report(mode:str="day",
@@ -114,16 +120,69 @@ def install(app,Employee,Event,Absence,Shift,Base,db,require_role):
         for a in all_absences:absences_by[a.employee_id].append(a)
         for shift in all_shifts:shifts_by[shift.employee_id][shift.day]=shift
         travel_dates=set()
+        travel_minutes=defaultdict(int)
         travel_table=Base.metadata.tables.get("travel_order")
         if travel_table is not None:
             for trip in session.execute(select(travel_table).where(
                 travel_table.c.status=="approved")).mappings().all():
-                start=utc_time(trip["starts_at"]).astimezone(TZ).date()
-                end=utc_time(trip["ends_at"]).astimezone(TZ).date()
-                day_cursor=max(start,period_start)
-                while day_cursor<=min(end,period_end):
+                start_utc=utc_time(trip["starts_at"])
+                end_utc=utc_time(trip["ends_at"])
+                if end_utc<=start_utc:continue
+                day_cursor=max(start_utc.astimezone(TZ).date(),period_start)
+                last_day=min(end_utc.astimezone(TZ).date(),period_end)
+                while day_cursor<=last_day:
                     travel_dates.add((trip["employee_id"],day_cursor))
+                    lo=max(start_utc,datetime.combine(day_cursor,time.min,TZ).astimezone(timezone.utc))
+                    hi=min(end_utc,datetime.combine(day_cursor+timedelta(days=1),time.min,TZ).astimezone(timezone.utc))
+                    travel_minutes[(trip["employee_id"],day_cursor)]+=max(0,int((hi-lo).total_seconds()//60))
                     day_cursor+=timedelta(days=1)
+        components_by=defaultdict(dict)
+        for comp in session.scalars(select(WageComponent).where(
+            WageComponent.day>=period_start,WageComponent.day<=period_end,
+            WageComponent.active==True)).all():
+            components_by[comp.employee_id][comp.day]=comp
+        def classify_day(employee_id,raw,approved_absences):
+            day=raw["day"];plan=raw["plan"];worked=raw["worked"]
+            values={"doctor_min":0,"accompany_min":0,"home_office_min":0,
+                "business_trip_min":0,"service_errand_min":0,
+                "travel_duration_min":travel_minutes.get((employee_id,day),0)}
+            warning=[]
+            # Absence minutes can represent paid medical time. They are NOT
+            # added twice to daily worked time or to legacy paid absence credit.
+            for absence in approved_absences:
+                if not absence.start<=day<=absence.end:continue
+                if absence.kind in ("doctor","accompany"):
+                    amount=absence.minutes if absence.minutes is not None and absence.start==absence.end else plan
+                    k="doctor_min" if absence.kind=="doctor" else "accompany_min"
+                    values[k]=min(plan,values[k]+max(0,int(amount)))
+                elif absence.kind=="home_office":
+                    values["home_office_min"]=worked
+            comp=components_by.get(employee_id,{}).get(day)
+            credit_extra=0
+            kind=None
+            if comp:
+                kind=comp.kind
+                amount=get_mode_minutes(comp,plan,worked)
+                key=kind+"_min"
+                if key in values:
+                    # Payroll component overrides the earlier same-day display classification,
+                    # rather than adding the same hours twice.
+                    values[key]=max(values[key],amount)
+                if kind in PAYROLL_CREDIT_KINDS and comp.mode!="punched":
+                    if kind in ("doctor","accompany") and raw["credit"]:
+                        # Existing approved leave already participates in the legacy
+                        # balance calculation. Do not double-credit it.
+                        credit_extra=0
+                    else:
+                        credit_extra=min(amount,max(0,plan-worked-raw["credit"]))
+                        if worked and amount:warning.append("Mzdová zložka sa môže časovo prekrývať s pípnutím; over HR")
+                if kind=="home_office" and not values["home_office_min"]:
+                    values["home_office_min"]=worked
+            # Travel orders alone describe trip duration, not work and not
+            # automatic salary credit. The explicit HR classification defines it.
+            if (employee_id,day) in travel_dates and not values["business_trip_min"] and comp is None:
+                warning.append("Služobná cesta: trvanie cesty sa nerovná odpracovanému času; doplň mzdovú klasifikáciu")
+            return values,credit_extra,kind,warning
         report_rows=[]
         counts={"total":0,"present":0,"break":0,"absent":0,"away":0,"unrecorded":0,"warning":0}
         now=datetime.now(timezone.utc)
@@ -179,7 +238,8 @@ def install(app,Employee,Event,Absence,Shift,Base,db,require_role):
                     status="Bez záznamu";key="unrecorded"
                 pending=[a for a in absence_list if a.start<=target<=a.end and a.status=="pending"]
                 if pending and not absent_labels:status="Žiadosť čaká";key="unrecorded"
-                warning=list(r["warnings"])
+                wage_values,extra_credit,wage_kind,wage_warnings=classify_day(person.id,r,today_absences)
+                warning=list(r["warnings"])+wage_warnings
                 if is_current and state in ("present","break"):
                     warning.append("Otvorená zmena: odpracovaný čas zatiaľ nezahŕňa otvorený interval")
                 out={**common,"date":target.isoformat(),"status":status,"status_key":key,
@@ -188,8 +248,9 @@ def install(app,Employee,Event,Absence,Shift,Base,db,require_role):
                     "last_punch":utc_time(latest_punch.at).astimezone(TZ).strftime("%H:%M") if latest_punch else None,
                     "last_kind":latest_punch.kind if latest_punch else None,
                     "planned_min":r["plan"],"worked_min":r["worked"],
-                    "break_min":r["breaks"],"credited_min":r["credit"],
-                    "saldo_min":r["saldo"],"component":"Služobná cesta" if on_trip else "Home office" if is_ho else ", ".join(absent_labels) if absent_labels else ("Práca" if r["worked"] else "—"),
+                    "break_min":r["breaks"],"credited_min":r["credit"]+extra_credit,
+                    "saldo_min":r["saldo"]+extra_credit,**wage_values,
+                    "component":WAGE_KINDS.get(wage_kind) if wage_kind else "Služobná cesta" if on_trip else "Home office" if is_ho else ", ".join(absent_labels) if absent_labels else ("Práca" if r["worked"] else "—"),
                     "warnings":warning}
                 report_rows.append(out)
                 counts[key]+=1;counts["total"]+=1
@@ -198,9 +259,16 @@ def install(app,Employee,Event,Absence,Shift,Base,db,require_role):
                 totals={key:sum(r[key] for r in daily) for key in ("plan","worked","breaks","credit","saldo")}
                 category=calculate(records,begin,finish)
                 component_minutes=defaultdict(int)
+                component_extra=0
+                component_warnings=[]
                 for r in daily:
+                    values,more,kind,warnings=classify_day(person.id,r,confirmed)
+                    for key,value in values.items():component_minutes[key]+=value
+                    component_extra+=more
+                    component_warnings.extend(warnings)
                     for part in r["absence"].split(", "):
-                        if part:component_minutes[part]+=r["credit"]
+                        if part and part not in ("doctor","accompany","home_office"):
+                            component_minutes[part]+=r["credit"]
                 presence_events=[e for e in records if utc_time(e.at)<=now and e.kind!="void"]
                 state,_=state_for_date(presence_events,now)
                 today_absences=[a for a in confirmed if a.start<=current_day<=a.end]
@@ -208,14 +276,19 @@ def install(app,Employee,Event,Absence,Shift,Base,db,require_role):
                 presence=", ".join(ABSENCE_LABELS.get(a.kind,a.kind) for a in today_absences) if today_absences else ("Príchod otvorený*" if state=="present" else "Mimo / bez otvoreného príchodu")
                 if on_trip_today:presence="Služobná cesta"
                 elif any(a.kind=="home_office" for a in today_absences):presence="Home office"
-                warnings=sum(len(r["warnings"]) for r in daily)+len(category["warnings"])
+                warnings=sum(len(r["warnings"]) for r in daily)+len(category["warnings"])+len(component_warnings)
                 out={**common,"presence":presence,
                     "planned_min":totals["plan"],"worked_min":totals["worked"],
-                    "break_min":totals["breaks"],"credited_min":totals["credit"],
-                    "saldo_min":totals["saldo"],
-                    "vacation_min":component_minutes["vacation"],"doctor_min":component_minutes["doctor"],
-                    "accompany_min":component_minutes["accompany"],
-                    "other_absence_min":sum(v for k,v in component_minutes.items() if k not in ("vacation","doctor","accompany")),
+                    "break_min":totals["breaks"],"credited_min":totals["credit"]+component_extra,
+                    "saldo_min":totals["saldo"]+component_extra,
+                    "vacation_min":component_minutes["vacation"],
+                    "doctor_min":component_minutes["doctor_min"],
+                    "accompany_min":component_minutes["accompany_min"],
+                    "home_office_min":component_minutes["home_office_min"],
+                    "business_trip_min":component_minutes["business_trip_min"],
+                    "service_errand_min":component_minutes["service_errand_min"],
+                    "travel_duration_min":component_minutes["travel_duration_min"],
+                    "other_absence_min":sum(v for k,v in component_minutes.items() if k not in ("vacation","doctor","accompany","home_office","doctor_min","accompany_min","home_office_min","business_trip_min","service_errand_min","travel_duration_min")),
                     "night_min":category["night_minutes"],
                     "saturday_min":category["saturday_minutes"],
                     "sunday_min":category["sunday_minutes"],
@@ -228,11 +301,11 @@ def install(app,Employee,Event,Absence,Shift,Base,db,require_role):
         if mode=="day":
             totals={key:sum(r[key] for r in report_rows) for key in ("planned_min","worked_min","break_min","credited_min","saldo_min")}
         else:
-            totals={key:sum(r[key] for r in report_rows) for key in ("planned_min","worked_min","break_min","credited_min","saldo_min","vacation_min","doctor_min","accompany_min","night_min")}
+            totals={key:sum(r[key] for r in report_rows) for key in ("planned_min","worked_min","break_min","credited_min","saldo_min","vacation_min","doctor_min","accompany_min","home_office_min","business_trip_min","service_errand_min","travel_duration_min","night_min")}
         return {"mode":mode,"date":target.isoformat() if mode=="day" else None,
             "year":yy,"month":mm,"columns":[{"key":k,"label":label} for k,label in (DAY_HEADERS if mode=="day" else MONTH_HEADERS)],
             "rows":report_rows,"counts":counts,"totals":totals,"as_of":now.isoformat(),
-            "note":"* Prítomnosť je orientačne odvodená z posledného RFID záznamu, nie z fyzickej lokalizácie. Otvorené zmeny nie sú v odpracovanom čase. Saldo a neprítomnosti treba pred mzdami skontrolovať."}
+            "note":"Mzdové časové zložky sú informatívne a pri ručnej klasifikácii vyžadujú HR kontrolu. Trvanie služobnej cesty nie je automaticky vykonaná práca. Dodatočný kredit z tejto obrazovky nie je spätne zapísaný do individuálneho PDF ani mzdového exportu. Otvorené zmeny sa nezapočítavajú."}
 
     @app.get("/api/group-report/export",dependencies=[Depends(require_role("admin","hr"))])
     def export(mode:str="day",day:date=Query(default_factory=date.today),
