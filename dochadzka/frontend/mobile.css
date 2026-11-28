@@ -72,6 +72,7 @@
   .mobile-more-list{display:grid;grid-template-columns:1fr 1fr;gap:9px;overflow-y:auto;overscroll-behavior:contain;margin:15px -4px 0;padding:0 4px 12px}
   .mobile-more-item{display:flex;align-items:center;gap:10px;text-align:left;background:#f8fbff;color:#1b3e62;border:1px solid #e3eaf3;border-radius:12px;min-height:51px;padding:10px;font-size:12px;font-weight:750;overflow-wrap:anywhere}
   .mobile-more-item.active{background:#e6eefb;border-color:#acc4e7}
+  .mobile-more-item[hidden]{display:none!important}
   .mobile-more-item svg{width:19px;height:19px;flex:none;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
   .mobile-more-actions{margin-top:auto;border-top:1px solid #e8edf5;padding-top:13px;display:flex;gap:10px}
   .mobile-more-actions button{flex:1;min-height:47px;border-radius:11px;font-weight:800}
