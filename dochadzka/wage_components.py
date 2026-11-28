@@ -55,6 +55,14 @@ def install(app,Base,Employee,engine,db,require_role,audit,is_closed_range):
         cancelled_at:Mapped[Optional[datetime]]=mapped_column(DateTime(timezone=True),nullable=True)
         cancellation_reason:Mapped[Optional[str]]=mapped_column(String(400),nullable=True)
     Base.metadata.create_all(engine)
+    def ensure_unconfirmed(session,employee_id,day):
+        reviews=Base.metadata.tables.get("employee_month_review")
+        if reviews is None:return
+        confirmed=session.execute(select(reviews.c.employee_id).where(
+            reviews.c.employee_id==employee_id,reviews.c.year==day.year,
+            reviews.c.month==day.month,reviews.c.confirmed_at.isnot(None))).first()
+        if confirmed:raise HTTPException(409,"Dochádzka zamestnanca je potvrdená; HR ju musí najprv odomknúť")
+
     def serialize(x):
         return {"id":x.id,"employee_id":x.employee_id,"day":x.day,"kind":x.kind,"mode":x.mode,
             "starts_at":x.starts_at,"ends_at":x.ends_at,"note":x.note,"active":x.active,
@@ -77,6 +85,7 @@ def install(app,Base,Employee,engine,db,require_role,audit,is_closed_range):
             raise HTTPException(422,"Dátum mimo pracovného pomeru")
         if is_closed_range(session,data.day,data.day):
             raise HTTPException(409,"Zvolený mesiac je uzavretý")
+        ensure_unconfirmed(session,data.employee_id,data.day)
         start=end=None
         if data.mode=="time_range":
             if not data.starts_at or not data.ends_at or not data.starts_at.tzinfo or not data.ends_at.tzinfo:
@@ -112,6 +121,7 @@ def install(app,Base,Employee,engine,db,require_role,audit,is_closed_range):
         item=session.get(WageComponent,component_id)
         if not item or not item.active:raise HTTPException(404,"Aktívna zložka neexistuje")
         if is_closed_range(session,item.day,item.day):raise HTTPException(409,"Mesiac je uzavretý")
+        ensure_unconfirmed(session,item.employee_id,item.day)
         item.active=False;item.cancelled_by=actor.username
         item.cancelled_at=datetime.now(timezone.utc);item.cancellation_reason=payload.reason
         audit(session,actor.username,"wage_component.cancel",
