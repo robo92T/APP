@@ -7,7 +7,7 @@ import os
 import random
 from datetime import date, datetime, time, timedelta, timezone
 from zoneinfo import ZoneInfo
-from sqlalchemy import select, insert, func
+from sqlalchemy import select, insert, func, text
 from sqlalchemy.orm import Session
 from legal_calendar import is_workday
 
@@ -28,8 +28,15 @@ NAMES=[
 def seed_preview(Base,engine,Employee,Event,Absence,Shift,audit):
     if os.getenv("APP_ENV")!="preview" or os.getenv("DEMO_SEED")!="10":
         return {"seeded":False,"reason":"disabled"}
-    if engine.dialect.name!="sqlite":
-        raise RuntimeError("Demo seed is forbidden on PostgreSQL")
+    if engine.dialect.name != "sqlite":
+        # PostgreSQL demo data require explicit opt-in and the named TEST database.
+        # Never populate an arbitrary production database with fictional employees.
+        if engine.dialect.name != "postgresql" or os.getenv("ALLOW_DEMO_SEED_ON_POSTGRES") != "true":
+            return {"seeded": False, "reason": "demo seed disabled on non-SQLite database"}
+        with engine.connect() as connection:
+            name = connection.execute(text("SELECT current_database()")).scalar_one()
+        if name != "sk_dochadzka_db":
+            raise RuntimeError("PostgreSQL demo seed is restricted to sk_dochadzka_db")
     with Session(engine) as session:
         if session.scalar(select(func.count(Employee.id)))>0:
             return {"seeded":False,"reason":"employees already exist"}
