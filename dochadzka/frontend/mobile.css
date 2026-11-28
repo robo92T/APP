@@ -1,0 +1,270 @@
+/* BID Dochádzka • mobile first app shell • November 2026 */
+.mobile-bottom-nav,.mobile-more-overlay{display:none}
+@media (max-width:700px){
+  html{max-width:100%;overflow-x:hidden}
+  body{max-width:100%;overflow-x:hidden;background:#eff4fa;-webkit-text-size-adjust:100%}
+  .shell{display:block;min-width:0;width:100%}
+  .shell .sidebar{display:none!important}
+  .shell .main{width:100%;min-width:0;max-width:100%;padding-bottom:calc(96px + env(safe-area-inset-bottom,0px))}
+  .main > header{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:12px;padding:17px 17px 19px;position:relative;top:auto;min-width:0;border-bottom:3px solid #f5c400}
+  .main > header > div:first-child{min-width:0}
+  .main > header .kicker{display:block;font-size:9px;letter-spacing:1.15px;line-height:1.5;overflow-wrap:anywhere}
+  .main > header h2{font-size:clamp(19px,5.6vw,25px);line-height:1.16;letter-spacing:-.7px;margin:6px 0 0;overflow-wrap:anywhere}
+  .main > header .header-right{min-width:0;max-width:112px;align-items:center;justify-content:center;gap:0}
+  .main > header .user{max-width:112px;min-width:0;padding:9px 10px;font-size:10px;line-height:1.3;text-align:center;border-radius:12px;overflow-wrap:anywhere;word-break:normal;box-shadow:none}
+  .main > header #installApp,.main > header #today{display:none!important}
+  main#content{padding:16px 13px 10px;width:100%;max-width:100%;min-width:0}
+  main#content > *{max-width:100%;min-width:0}
+  #content .grid2{grid-template-columns:minmax(0,1fr);gap:13px}
+  #content .stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:15px}
+  #content .stat{min-width:0;padding:15px 13px;border-radius:14px}
+  #content .stat .value{font-size:clamp(19px,5.6vw,27px);overflow-wrap:anywhere}
+  #content .stat small{font-size:11px;line-height:1.45;display:block}
+  #content .panel{min-width:0;padding:18px 15px;border-radius:15px;margin-bottom:14px;box-shadow:0 6px 20px #12396308}
+  #content .panel h3{font-size:17px;line-height:1.25}
+  #content .section-top{display:flex;align-items:flex-start;gap:11px}
+  #content .section-top>h3{margin:0}
+  #content .section-top > button{white-space:normal;min-width:0;max-width:100%;line-height:1.4}
+  #content .actions{display:flex;gap:9px;flex-wrap:wrap}
+  #content .actions > button{flex:1 1 125px;max-width:100%;white-space:normal;line-height:1.3;min-height:44px}
+  #content .intro{font-size:13px;line-height:1.65;margin:15px 0}
+  #content .notice{font-size:12px;line-height:1.55;border-radius:13px}
+  #content button,#content input,#content select,#content textarea{max-width:100%}
+  #content .field{min-width:0}
+  #content .field input,#content .field select,#content .field textarea{width:100%}
+  #content .form-grid{grid-template-columns:minmax(0,1fr)}
+  #content .toolbar,#content .section-top{max-width:100%}
+  #content .scroll{max-width:100%;overscroll-behavior-x:contain}
+  #content table:not(.mobile-card-table){width:100%}
+  #content .scroll.mobile-card-scroll{overflow:visible!important}
+  #content table.mobile-card-table{min-width:0!important;width:100%;border:0;border-collapse:separate}
+  #content .mobile-card-table thead{display:none}
+  #content .mobile-card-table tbody{display:grid;grid-template-columns:1fr;gap:11px}
+  #content .mobile-card-table tbody tr{display:block;background:#f8fbff;border:1px solid #dfe9f3;border-radius:13px;box-shadow:0 2px 6px #153d6606;padding:6px 12px}
+  #content .mobile-card-table td{display:grid;grid-template-columns:minmax(80px,31%) minmax(0,1fr);gap:7px;align-items:center;padding:11px 1px;color:#243f60;font-size:12px;line-height:1.45;min-width:0;overflow-wrap:anywhere;border-bottom:1px solid #e8eef5}
+  #content .mobile-card-table td:last-child{border-bottom:0}
+  #content .mobile-card-table td::before{content:attr(data-label);font-size:10px;text-transform:uppercase;letter-spacing:.7px;font-weight:800;color:#7286a1}
+  #content .mobile-card-table td .pill{justify-self:start;white-space:normal}
+  #content .mobile-card-table td .actions{width:100%;display:flex;gap:7px}
+  #content .mobile-card-table td .actions button{flex:1 1 95px;margin:0;font-size:12px}
+  #content .mobile-card-table td:first-child{font-size:14px;font-weight:800;color:#14375c}
+  #content .mobile-card-table td:first-child::before{font-size:10px}
+  #content .mobile-card-table td:has(.actions){grid-template-columns:1fr;gap:9px}
+  #content .mobile-card-table td:has(.actions)::before{display:block}
+  #content .mobile-card-table .mini{min-height:38px}
+  .main footer{max-width:100%;padding:4px 16px 25px;font-size:10px;line-height:1.6}
+  .storage-warning,.demo-banner,.legal-notice-banner{margin:12px 13px 0}
+  .mobile-bottom-nav{display:flex;position:fixed;bottom:0;left:0;right:0;z-index:110;justify-content:space-around;align-items:stretch;gap:3px;padding:6px 7px calc(7px + env(safe-area-inset-bottom,0px));border-top:1px solid #d8e3f0;background:#fff;box-shadow:0 -6px 26px #0e2b5016}
+  .mobile-tab{display:flex;flex:1 1 0;min-width:0;flex-direction:column;align-items:center;justify-content:center;gap:4px;border:0;border-radius:12px;color:#647992;background:transparent;min-height:56px;padding:6px 3px;font-size:10px;font-weight:750;line-height:1.2}
+  .mobile-tab svg{width:21px;height:21px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+  .mobile-tab span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
+  .mobile-tab.active{background:#e8f0fc;color:#12396b}
+  .mobile-tab.active svg{color:#12396b}
+  .mobile-tab:focus-visible,.mobile-more-close:focus-visible,.mobile-more-item:focus-visible{outline:3px solid #edc83d;outline-offset:2px}
+  .mobile-more-overlay{position:fixed;inset:0;z-index:150;background:#071e39a8;display:flex;align-items:flex-end}
+  .mobile-more-overlay.hidden{display:none!important}
+  .mobile-more-panel{display:flex;flex-direction:column;width:100%;height:min(83dvh,740px);background:#fff;border-radius:22px 22px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom,0px));box-shadow:0 -18px 55px #071e3930;min-height:0}
+  .mobile-more-heading{display:flex;justify-content:space-between;align-items:center;gap:10px}
+  .mobile-more-heading h3{font:800 21px Manrope,system-ui;color:#122f55;margin:0}
+  .mobile-more-close{border:1px solid #dce5f0;background:#f4f7fc;color:#26496e;border-radius:12px;width:44px;height:44px;font-size:23px}
+  .mobile-more-description{font-size:12px;line-height:1.5;color:#6b7d93;margin:7px 0 14px}
+  .mobile-more-search{width:100%;min-height:45px;padding:10px 13px;border:1px solid #d9e3f0;background:#f8fbfe;border-radius:12px;font-size:14px}
+  .mobile-more-list{display:grid;grid-template-columns:1fr 1fr;gap:9px;overflow-y:auto;overscroll-behavior:contain;margin:15px -4px 0;padding:0 4px 12px}
+  .mobile-more-item{display:flex;align-items:center;gap:10px;text-align:left;background:#f8fbff;color:#1b3e62;border:1px solid #e3eaf3;border-radius:12px;min-height:51px;padding:10px;font-size:12px;font-weight:750;overflow-wrap:anywhere}
+  .mobile-more-item.active{background:#e6eefb;border-color:#acc4e7}
+  .mobile-more-item[hidden]{display:none!important}
+  .mobile-more-item svg{width:19px;height:19px;flex:none;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .mobile-more-actions{margin-top:auto;border-top:1px solid #e8edf5;padding-top:13px;display:flex;gap:10px}
+  .mobile-more-actions button{flex:1;min-height:47px;border-radius:11px;font-weight:800}
+  .mobile-logout{background:#fff;color:#b24553;border:1px solid #e9cbd1}
+  body.mobile-menu-open{overflow:hidden}
+  #toast{left:12px;right:12px;bottom:calc(87px + env(safe-area-inset-bottom,0px));font-size:12px;text-align:center}
+}
+@media(max-width:365px){
+  .main > header .header-right{max-width:90px}
+  .main > header .user{max-width:90px;font-size:9px;padding:8px 6px}
+  .mobile-more-list{grid-template-columns:1fr}
+  #content .stats{gap:7px}
+  #content .panel{padding:14px 12px}
+}
+@media(min-width:701px){.mobile-bottom-nav,.mobile-more-overlay{display:none!important}}
+
+
+/* Mobile/desktop accessible, clickable dashboard tiles */
+#content button.stat.stat-action{
+ display:flex;flex-direction:column;align-items:flex-start;text-align:left;
+ border:1px solid #e6ecf5;border-top:4px solid #efc823;
+ width:100%;font-family:inherit;color:#14243b;background:#fff;
+ cursor:pointer;appearance:none;-webkit-appearance:none;
+ min-height:148px;transition:box-shadow .16s ease,transform .16s ease,background .16s ease;
+ touch-action:manipulation;-webkit-tap-highlight-color:rgba(22,55,94,.12)
+}
+#content button.stat.stat-action:hover{background:#f8fbff;box-shadow:0 10px 24px #12396318}
+#content button.stat.stat-action:active{transform:scale(.985)}
+#content button.stat.stat-action:focus-visible{outline:3px solid #3b82f6;outline-offset:3px}
+#content button.stat.stat-action small{color:#697a8d}
+#content button.stat.stat-action .value{color:#122c4b}
+@media(max-width:700px){#content button.stat.stat-action{min-height:145px}}
+
+/* Employee interactive month calendars */
+#content .bid-calendar-panel,#content .bid-day-panel,#content .bid-request-panel{
+ background:#fff;border:1px solid #e4e9f1;border-radius:17px;
+ box-shadow:0 5px 16px rgba(17,45,79,.06);margin-bottom:15px;overflow:hidden
+}
+#content .bid-calendar-head{padding:18px 17px 16px;background:#153861;color:white}
+#content .bid-calendar-head h3{margin:0 0 15px;font-size:17px;color:#fff}
+#content .bid-calendar-controls{display:flex;justify-content:space-between;align-items:center;gap:12px}
+#content .bid-calendar-controls strong{font-size:17px;text-align:center;text-transform:capitalize;letter-spacing:.01em}
+#content .bid-calendar-controls button{border:1px solid #ffffff50;background:#ffffff1a;color:white;border-radius:12px;width:46px;height:46px;flex-shrink:0;display:grid;place-items:center;font-size:29px;font-weight:400;line-height:1;cursor:pointer;touch-action:manipulation}
+#content .bid-calendar-controls button:active{background:#f1c938;color:#17283f}
+#content .bid-calendar-weekdays,#content .bid-calendar-days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));text-align:center}
+#content .bid-calendar-weekdays{padding:13px 10px 4px;color:#65809a;font-size:11px;font-weight:800;letter-spacing:.035em}
+#content .bid-calendar-days{padding:7px 10px 13px;gap:3px}
+#content button.bid-calendar-day{appearance:none;-webkit-appearance:none;background:transparent;border:2px solid transparent;border-radius:12px;color:#263a51;min-width:0;height:59px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:4px;font-size:16px;font-weight:750;cursor:pointer;touch-action:manipulation}
+#content button.bid-calendar-day:nth-child(7n+6),#content button.bid-calendar-day:nth-child(7n+7){color:#9e5760}
+#content button.bid-calendar-day.today{border-color:#e3ba1c}
+#content button.bid-calendar-day.selected{background:#18518a;color:#fff!important;border-color:#18518a}
+#content button.bid-calendar-day:active{background:#eef5ff}
+#content button.bid-calendar-day:focus-visible{outline:3px solid #0b89e8;outline-offset:1px}
+#content .bid-calendar-outside{height:59px}
+#content .bid-calendar-dots{display:flex;gap:3px;justify-content:center;min-height:6px;max-width:100%}
+#content .bid-dot{display:inline-block;width:6px;height:6px;flex-shrink:0;border-radius:99px;background:#3688df}
+#content .bid-dot-work{background:#00b5c7}
+#content .bid-dot-approved{background:#65af37}
+#content .bid-dot-pending{background:#efba26}
+#content .bid-dot-rejected{background:#e76b65}
+#content .bid-month-totals{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:14px}
+#content .bid-month-totals span{flex:1 1 125px;padding:13px;border:1px solid #dfe9f3;border-radius:12px;color:#63788f;background:#eef5fb;display:flex;flex-direction:column;gap:3px;font-size:12px}
+#content .bid-month-totals b{font-size:19px;color:#163861}
+#content .bid-day-panel{padding:17px}
+#content .bid-day-title{display:flex;justify-content:space-between;gap:14px;align-items:center;margin-bottom:14px;flex-wrap:wrap}
+#content .bid-day-title strong{text-transform:capitalize;font-size:17px;color:#1a3b60}
+#content .bid-day-title span{font-size:12px;color:#68809b}
+#content .bid-activity{border-top:1px solid #edf2f6;padding:14px 0;display:flex;align-items:center;gap:12px}
+#content .bid-activity>span{min-width:50px;color:#315d83;font-weight:800;font-variant-numeric:tabular-nums}
+#content .bid-activity strong{flex:1;min-width:0;font-size:14px}
+#content .bid-activity small{font-size:11px;color:#8490a2;text-align:right}
+#content .bid-activity-absence{color:#6e6426}
+#content .bid-cal-summary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;padding-top:15px;border-top:1px solid #e9eff5}
+#content .bid-cal-summary span{font-size:12px;color:#4b6584;background:#f2f6fb;padding:8px 10px;border-radius:8px}
+#content .bid-empty{color:#7d8c9d;font-size:13px;margin:9px 0 16px}
+#content .bid-calendar-legend{display:flex;gap:12px;flex-wrap:wrap;margin:0 0 14px;padding:3px 4px;font-size:11px;color:#647992}
+#content .bid-calendar-legend span{display:inline-flex;align-items:center;gap:5px}
+#content .bid-request-panel{padding:19px}
+#content .bid-request-panel h3{margin:0 0 14px;color:#183a5f;font-size:18px}
+#content .bid-request-panel form{display:grid;gap:12px}
+#content .bid-request-panel form label{display:grid;gap:6px;color:#58718d;font-size:12px;font-weight:750}
+#content .bid-request-panel input,#content .bid-request-panel select{width:100%;min-width:0;border:1px solid #ced9e6;border-radius:9px;padding:12px;background:#fff;color:#143453;font-size:16px;min-height:46px}
+#content .bid-request-dates{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+#content .bid-request-panel form button{min-height:48px}
+@media(max-width:440px){
+ #content .bid-calendar-head{padding:16px 13px}
+ #content .bid-calendar-head h3{font-size:15px}
+ #content .bid-calendar-days{gap:1px;padding:7px 5px 12px}
+ #content button.bid-calendar-day{height:53px;font-size:15px}
+ #content .bid-calendar-outside{height:53px}
+ #content .bid-calendar-controls strong{font-size:15px}
+ #content .bid-day-panel{padding:13px}
+ #content .bid-activity{gap:6px}
+ #content .bid-activity>span{min-width:43px}
+ #content .bid-activity strong{font-size:13px}
+}
+
+
+/* Same day-detail experience for administrator and employee */
+#content .bid-admin-calendar{margin-top:22px;margin-bottom:25px;min-width:0}
+#content .bid-admin-intro{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:0 0 12px;color:#18385f}
+#content .bid-admin-intro strong{font-size:17px;font-weight:800}
+#content .bid-admin-intro span{font-size:12px;color:#8192a8}
+#content .bid-calendar-loading{border:1px dashed #cbd9e7;padding:25px;border-radius:14px;color:#6b8198;background:#f5f9fe}
+#content .bid-day-panel{padding:0!important;overflow:hidden;border:1px solid #dfe9f3}
+#content .bid-daily-heading{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:20px 19px;background:linear-gradient(112deg,#183d66,#245a87);color:white}
+#content .bid-daily-heading h3{margin:5px 0 0;font-size:19px;font-weight:850;line-height:1.26;text-transform:capitalize;color:#fff}
+#content .bid-daily-eyebrow{font-size:10px;font-weight:800;letter-spacing:1.3px;color:#e8c643}
+#content .bid-daily-hours{display:grid;place-items:center;min-width:87px;min-height:44px;background:#ffffff1a;border:1px solid #ffffff3b;border-radius:10px;font-size:18px;font-weight:850;white-space:nowrap;font-variant-numeric:tabular-nums}
+#content .bid-daily-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;padding:16px 18px 4px}
+#content .bid-daily-metric{display:flex;flex-direction:column;justify-content:center;gap:6px;padding:13px;border:1px solid #e6edf5;border-radius:12px;background:#f7faff;min-width:0}
+#content .bid-daily-metric small{color:#647b92;font-size:11px;font-weight:700}
+#content .bid-daily-metric strong{font-size:21px;color:#1b4168;font-weight:850;font-variant-numeric:tabular-nums;white-space:nowrap}
+#content .bid-daily-metric strong.saldo{color:#188577}
+#content .bid-timeline-wrap{padding:18px 20px 17px;margin:12px 18px;border:1px solid #e0eaf3;border-radius:14px;background:#fff}
+#content .bid-timeline-title{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:12px;font-size:13px;font-weight:850;color:#194067}
+#content .bid-timeline-title small{font-size:11px;font-weight:600;color:#7a8ea4}
+#content .bid-timeline-track{position:relative;height:30px;border-radius:9px;background:repeating-linear-gradient(90deg,transparent 0,transparent calc(25% - 1px),#bdd0e2 calc(25% - 1px),#bdd0e2 25%),#edf2f7;overflow:hidden}
+#content .bid-timeline-segment{display:block;position:absolute;top:3px;height:24px;border-radius:5px;min-width:2px;box-shadow:0 1px 5px #1133561c}
+#content .bid-timeline-work{background:#19b5be}
+#content .bid-timeline-pause{background:#e8ba42}
+#content .bid-timeline-marker{position:absolute;top:0;height:30px;width:2px;transform:translateX(-1px);background:#173655;z-index:2;border:1px solid white;box-sizing:content-box}
+#content .bid-timeline-ticks{display:flex;justify-content:space-between;color:#8092a7;font-size:11px;font-variant-numeric:tabular-nums;margin-top:8px}
+#content .bid-timeline-legend{display:flex;align-items:center;gap:13px;flex-wrap:wrap;margin-top:12px;color:#617991;font-size:11px}
+#content .bid-timeline-legend span{display:inline-flex;align-items:center;gap:5px}
+#content .bid-timeline-legend i{display:inline-block;width:11px;height:9px;border-radius:3px}
+#content .bid-legend-work{background:#19b5be}
+#content .bid-legend-pause{background:#e8ba42}
+#content .bid-timeline-legend .bid-legend-mark{width:3px;background:#173655;border-radius:0}
+#content .bid-events-title{margin:19px 19px 8px;display:flex;justify-content:space-between;align-items:center;color:#1b4168;font-size:15px;font-weight:850}
+#content .bid-events-title span{border-radius:8px;background:#e6eef7;color:#496783;padding:3px 9px;font-size:12px}
+#content .bid-event-list{padding:0 18px 10px}
+#content .bid-event-line{display:flex;align-items:center;gap:12px;border-bottom:1px solid #edf2f6;padding:13px 0}
+#content .bid-event-line:last-child{border-bottom:0}
+#content .bid-event-symbol{width:38px;height:38px;flex:0 0 38px;border-radius:11px;background:#dff4f2;color:#218176;display:grid;place-items:center;font-size:18px;font-weight:850}
+#content .bid-event-out{background:#e9effb;color:#305b8a}
+#content .bid-event-break_start,#content .bid-event-break_end{background:#fff2cd;color:#ab790c}
+#content .bid-event-main{display:flex;flex:1;flex-direction:column;gap:3px;min-width:0}
+#content .bid-event-main strong{font-size:13px;color:#1e4263}
+#content .bid-event-main small{font-size:11px;color:#8596a7}
+#content .bid-event-line time{font-weight:850;font-size:17px;color:#1b4468;white-space:nowrap;font-variant-numeric:tabular-nums}
+#content .bid-absence-line{border-top:1px solid #e7eef6;margin:0 18px;padding:17px 0}
+#content .bid-absence-line>strong{display:block;margin-bottom:9px;color:#1b4168}
+#content .bid-absence-tags{display:flex;flex-wrap:wrap;gap:7px}
+#content .bid-day-tag{border-radius:20px;background:#f4f4f4;color:#53697f;font-size:11px;font-weight:800;padding:7px 10px}
+#content .bid-day-tag-approved{background:#e8f5e6;color:#2d753d}
+#content .bid-day-tag-pending{background:#fff4d5;color:#8e6815}
+#content .bid-day-tag-rejected{background:#ffebeb;color:#9e3f3f}
+#content .bid-calendar-warnings{background:#fff5e0;color:#956c22;margin:12px 18px;padding:10px 12px;border-radius:10px;font-size:12px}
+#content .bid-timeline-footnote{font-size:11px;color:#73869b;line-height:1.5;padding:0 19px 15px;margin:12px 0 0}
+#content .bid-event-list .bid-empty{padding:14px 0}
+@media(max-width:850px){
+ #content .bid-daily-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}
+ #content .bid-daily-metric strong{font-size:19px}
+}
+@media(max-width:440px){
+ #content .bid-admin-intro{align-items:flex-start}
+ #content .bid-daily-heading{padding:15px 13px}
+ #content .bid-daily-heading h3{font-size:15px}
+ #content .bid-daily-hours{font-size:15px;min-width:73px;padding:0 6px}
+ #content .bid-daily-metrics{gap:7px;padding:11px 11px 0}
+ #content .bid-daily-metric{padding:11px 9px}
+ #content .bid-timeline-wrap{margin:12px 10px;padding:15px 12px}
+ #content .bid-events-title{margin:16px 12px 8px}
+ #content .bid-event-list{padding:0 12px 10px}
+ #content .bid-timeline-footnote{padding:0 12px 14px}
+}
+
+/* Transparent leave-request result and history on mobile / desktop */
+#content .bid-request-success{padding:16px 18px;margin:12px 0 15px;background:#e6f5ee;border:1px solid #9ed0b5;border-radius:13px;color:#186748;display:flex;flex-direction:column;gap:7px;line-height:1.4}
+#content .bid-request-success strong{font-size:15px}
+#content .bid-request-success span{font-size:13px}
+#content .bid-request-history{margin:12px 0 17px;border-radius:16px;border:1px solid #dfe8f3;background:#fff;overflow:hidden;padding:15px}
+#content .bid-request-history h3{display:flex;justify-content:space-between;align-items:center;margin:0 0 10px;color:#18385f;font-size:16px}
+#content .bid-request-history h3 span{color:#647a91;font-size:13px}
+#content .bid-request-history-item{font-family:inherit;appearance:none;-webkit-appearance:none;display:flex;align-items:center;justify-content:space-between;text-align:left;gap:8px;width:100%;padding:13px 10px;border:0;border-bottom:1px solid #eef2f7;background:#fff;color:#18385f;cursor:pointer;touch-action:manipulation}
+#content .bid-request-history-item:last-child{border-bottom:0}
+#content .bid-request-history-item:focus-visible{outline:2px solid #308cd6;outline-offset:-2px}
+#content .bid-request-history-item:hover{background:#f3f8ff}
+#content .bid-request-history-item span{display:flex;flex-direction:column;gap:6px;min-width:0}
+#content .bid-request-history-item small{font-size:11px;color:#6b8198}
+#content .bid-request-history-item em{font-size:11px;font-style:normal;text-align:center;flex-shrink:0}
+
+/* Distinct approved home-office credit and administrator-only field GPS access */
+#content .bid-homeoffice-auto{margin:12px 17px;padding:15px 16px;border:1px solid #9ed5bd;border-radius:12px;background:#eaf8f1;color:#246947;display:flex;flex-direction:column;gap:6px;line-height:1.45}
+#content .bid-homeoffice-auto strong{font-size:15px;color:#186748}
+#content .bid-homeoffice-auto span{font-size:12px}
+#content .bid-field-permission-list{border:1px solid #e4ecf4;border-radius:13px;overflow:hidden}
+#content .bid-field-access-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 15px;border-bottom:1px solid #e4ecf4;background:#fff}
+#content .bid-field-access-row:last-child{border-bottom:0}
+#content .bid-field-access-row span{min-width:0;display:flex;flex-direction:column;gap:4px}
+#content .bid-field-access-row strong{font-size:14px;color:#223f63}
+#content .bid-field-access-row small{font-size:11px;color:#647992}
+#content .bid-field-access-row button{white-space:nowrap;touch-action:manipulation;min-height:40px}
+@media(max-width:440px){#content .bid-field-access-row{padding:10px;gap:7px}#content .bid-field-access-row button{padding:9px;font-size:12px}}

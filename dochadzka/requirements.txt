@@ -1,0 +1,17 @@
+fastapi>=0.115,<1
+uvicorn[standard]>=0.30,<1
+sqlalchemy>=2.0,<3
+passlib[bcrypt]>=1.7.4,<2
+python-jose[cryptography]>=3.3,<4
+holidays>=0.60,<1
+pydantic>=2,<3
+python-multipart>=0.0.12
+reportlab>=4.2,<5
+psycopg[binary]>=3.2,<4
+pyotp>=2.9,<3
+xlsxwriter>=3.2,<4
+httpx>=0.27,<1
+beautifulsoup4>=4.12,<5
+boto3>=1.35,<2
+
+Pillow>=11,<13

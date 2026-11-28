@@ -1,0 +1,32 @@
+name: SK Dochadzka CI
+on:
+  push:
+    paths:
+      - "dochadzka/**"
+      - ".github/workflows/dochadzka-ci.yml"
+  pull_request:
+    paths:
+      - "dochadzka/**"
+      - ".github/workflows/dochadzka-ci.yml"
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: dochadzka
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: pip install -r requirements.txt pytest
+      - name: Compile Python source
+        run: python -m compileall -q .
+      - name: Validate JavaScript syntax for phone and desktop
+        run: |
+          node --check frontend/app.js
+          node --check frontend/mobile-ui.js
+          node --check frontend/employee-calendar.js
+      - name: Run tests
+        run: pytest -q

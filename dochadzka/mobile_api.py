@@ -1,0 +1,214 @@
+"""Self-service employee APIs. Never let a user choose another employee_id."""
+from datetime import datetime, date, time, timedelta, timezone
+from calendar import monthrange
+from zoneinfo import ZoneInfo
+from fastapi import Depends, HTTPException, Query
+from pydantic import BaseModel, Field
+from sqlalchemy import select
+from sqlalchemy.orm import Session
+
+class SelfAbsence(BaseModel):
+    kind: str
+    start: date
+    end: date
+    minutes: int | None = Field(default=None,ge=1,le=1440)
+    note: str = Field(default="",max_length=400)
+
+ALLOWED={"vacation","doctor","accompany","doctor_unpaid","accompany_unpaid","unpaid","paid_leave","ocr","sick","home_office","other"}
+def install(app,Employee,Event,Absence,Shift,db,current_account,audit,require_role):
+    def mine(account=Depends(current_account),session:Session=Depends(db)):
+        if account.employee_id is None:raise HTTPException(403,"Účet nie je priradený zamestnancovi")
+        employee=session.get(Employee,account.employee_id)
+        if employee is None or not employee.active:raise HTTPException(403,"Neaktívny zamestnanec")
+        return employee
+    @app.get("/api/me/summary")
+    def summary(employee=Depends(mine),session:Session=Depends(db)):
+        tz=ZoneInfo("Europe/Bratislava")
+        now=datetime.now(tz);first=date(now.year,now.month,1)
+        nxt=date(now.year+(1 if now.month==12 else 0),1 if now.month==12 else now.month+1,1)
+        start=datetime.combine(first,time.min,tz).astimezone(timezone.utc)
+        stop=datetime.combine(nxt,time.min,tz).astimezone(timezone.utc)
+        events=session.scalars(select(Event).where(Event.employee_id==employee.id,Event.at>=start,Event.at<stop).order_by(Event.at,Event.id)).all()
+        opening=None;pause=None;pauses=0;worked=0;warnings=[];last=None
+        for e in events:
+            at=e.at.replace(tzinfo=timezone.utc) if e.at.tzinfo is None else e.at
+            last={"kind":e.kind,"at":at.astimezone(tz).isoformat()}
+            if e.kind=="in":
+                if opening is not None:warnings.append("duplicitný príchod")
+                else:opening=at;pause=None;pauses=0
+            elif e.kind=="break_start":
+                if opening is not None and pause is None:pause=at
+            elif e.kind=="break_end":
+                if pause is not None:pauses+=max(0,int((at-pause).total_seconds()//60));pause=None
+            elif e.kind=="out":
+                if opening is None:warnings.append("odchod bez príchodu")
+                else:
+                    if pause is not None:pauses+=max(0,int((at-pause).total_seconds()//60))
+                    worked+=max(0,int((at-opening).total_seconds()//60)-pauses)
+                    opening=None;pause=None;pauses=0
+        if opening is not None:warnings.append("neukončená smena")
+        absences=session.scalars(select(Absence).where(Absence.employee_id==employee.id,Absence.start<nxt,Absence.end>=first)).all()
+        requests=[{"id":a.id,"kind":a.kind,"start":a.start.isoformat(),"end":a.end.isoformat(),"status":a.status,"minutes":a.minutes} for a in absences]
+        # Use the shared server-side attendance calculation so approved HO is
+        # included on the employee dashboard even without any punch.
+        from pdf_reports import build_rows
+        calc_start=datetime.combine(first-timedelta(days=2),time.min,tz).astimezone(timezone.utc)
+        calc_stop=datetime.combine(nxt+timedelta(days=2),time.min,tz).astimezone(timezone.utc)
+        calc_events=session.scalars(select(Event).where(
+            Event.employee_id==employee.id,Event.at>=calc_start,Event.at<calc_stop
+        ).order_by(Event.at,Event.id)).all()
+        shifts={r.day:r for r in session.scalars(select(Shift).where(
+            Shift.employee_id==employee.id,
+            Shift.day>=first-timedelta(days=1),Shift.day<nxt
+        )).all()}
+        approved=[a for a in absences if a.status=="approved"]
+        daily=build_rows(employee,calc_events,shifts,approved,first.year,first.month)
+        worked=sum(row["worked"] for row in daily)
+        return {"name":employee.name,"period":first.strftime("%Y-%m"),"weekly_minutes":employee.weekly_minutes,
+                "worked_minutes":worked,"home_office_auto_minutes":sum(
+                    r.get("home_office_auto_minutes",0) for r in daily),
+                "last_event":last,"warnings":warnings,"requests":requests,
+                "note":"Schválený home office sa vykazuje automaticky 8:00 h bez GPS a pípnutia. Priebežná zmena bez odchodu sa zatiaľ nezapočíta."}
+    @app.get("/api/me/attendance")
+    def my_attendance(year:int=Query(ge=2020,le=2100),month:int=Query(ge=1,le=12),
+        employee=Depends(mine),session:Session=Depends(db)):
+        from pdf_reports import build_rows
+        tz=ZoneInfo("Europe/Bratislava")
+        begin=date(year,month,1)
+        end=date(year,month,monthrange(year,month)[1])
+        first=datetime.combine(begin-timedelta(days=2),time.min,tz).astimezone(timezone.utc)
+        stop=datetime.combine(end+timedelta(days=2),time.min,tz).astimezone(timezone.utc)
+        evs=session.scalars(select(Event).where(Event.employee_id==employee.id,
+            Event.at>=first,Event.at<stop).order_by(Event.at,Event.id)).all()
+        abss=session.scalars(select(Absence).where(Absence.employee_id==employee.id,
+            Absence.start<=end,Absence.end>=begin,Absence.status=="approved")).all()
+        shifts={r.day:r for r in session.scalars(select(Shift).where(
+            Shift.employee_id==employee.id,Shift.day>=begin-timedelta(days=1),
+            Shift.day<=end)).all()}
+        rows=build_rows(employee,evs,shifts,abss,year,month)
+        result=[]
+        for r in rows:
+            remote=any(a.kind=="home_office" and a.start<=r["day"]<=a.end for a in abss)
+            result.append({"day":r["day"].isoformat(),"in":r["in"].astimezone(tz).strftime("%H:%M") if r["in"] else None,
+                "out":r["out"].astimezone(tz).strftime("%H:%M") if r["out"] else None,
+                "worked_minutes":r["worked"],"planned_minutes":r["plan"],
+                "break_minutes":r["breaks"],"credited_minutes":r["credit"],
+                "home_office_auto_minutes":r.get("home_office_auto_minutes",0),
+                "saldo_minutes":r["saldo"],"component":"home_office" if remote else r["absence"],
+                "warnings":r["warnings"]})
+        return {"year":year,"month":month,"rows":result,
+            "total_worked_minutes":sum(x["worked_minutes"] for x in result),
+            "total_saldo_minutes":sum(x["saldo_minutes"] for x in result),
+            "note":"Vlastná dochádzka podľa uzavretých pípnutí. Otvorená zmena je zatiaľ nezapočítaná."}
+    @app.get("/api/admin/employee-calendar/{employee_id}")
+    def employee_calendar_admin(
+        employee_id:int,
+        year:int=Query(ge=2020,le=2100),
+        month:int=Query(ge=1,le=12),
+        _admin=Depends(require_role("admin","hr")),
+        session:Session=Depends(db)
+    ):
+        """Read-only month detail for one employee, HR/admin only.
+        
+        Reuse the same payroll-day splitting rules as the employee self-service.
+        Unapproved requests are shown as requests, never credited as worked time.
+        """
+        from pdf_reports import build_rows
+        employee=session.get(Employee,employee_id)
+        if employee is None:raise HTTPException(404,"Zamestnanec neexistuje")
+        tz=ZoneInfo("Europe/Bratislava")
+        begin=date(year,month,1)
+        end=date(year,month,monthrange(year,month)[1])
+        start_utc=datetime.combine(begin-timedelta(days=2),time.min,tz).astimezone(timezone.utc)
+        stop_utc=datetime.combine(end+timedelta(days=2),time.min,tz).astimezone(timezone.utc)
+        evs=session.scalars(select(Event).where(
+            Event.employee_id==employee.id,Event.at>=start_utc,Event.at<stop_utc
+        ).order_by(Event.at,Event.id)).all()
+        all_absences=session.scalars(select(Absence).where(
+            Absence.employee_id==employee.id,
+            Absence.start<=end,Absence.end>=begin
+        ).order_by(Absence.start,Absence.id)).all()
+        shifts={row.day:row for row in session.scalars(select(Shift).where(
+            Shift.employee_id==employee.id,
+            Shift.day>=begin-timedelta(days=1),Shift.day<=end
+        )).all()}
+        approved=[a for a in all_absences if a.status=="approved"]
+        rows=build_rows(employee,evs,shifts,approved,year,month)
+        day_rows=[]
+        for r in rows:
+            remote=any(a.kind=="home_office" and a.start<=r["day"]<=a.end for a in approved)
+            day_rows.append({
+                "day":r["day"].isoformat(),
+                "in":r["in"].astimezone(tz).strftime("%H:%M") if r["in"] else None,
+                "out":r["out"].astimezone(tz).strftime("%H:%M") if r["out"] else None,
+                "worked_minutes":r["worked"],
+                "planned_minutes":r["plan"],"break_minutes":r["breaks"],
+                "credited_minutes":r["credit"],"saldo_minutes":r["saldo"],
+                "home_office_auto_minutes":r.get("home_office_auto_minutes",0),
+                "component":"home_office" if remote else r["absence"],
+                "warnings":r["warnings"]
+            })
+        shown_events=[]
+        for ev in evs:
+            utc=ev.at.replace(tzinfo=timezone.utc) if ev.at.tzinfo is None else ev.at.astimezone(timezone.utc)
+            local=utc.astimezone(tz)
+            if begin<=local.date()<=end:
+                shown_events.append({
+                    "day":local.date().isoformat(),
+                    "time":local.strftime("%H:%M"),
+                    "kind":ev.kind,"origin":ev.origin
+                })
+        return {
+            "employee_id":employee.id,"employee_name":employee.name,
+            "year":year,"month":month,"rows":day_rows,
+            "events":shown_events,
+            "absences":[{
+                "id":a.id,"kind":a.kind,"start":a.start.isoformat(),
+                "end":a.end.isoformat(),"status":a.status,"minutes":a.minutes
+            } for a in all_absences],
+            "total_worked_minutes":sum(x["worked_minutes"] for x in day_rows),
+            "total_saldo_minutes":sum(x["saldo_minutes"] for x in day_rows),
+            "note":"Graf udalostí je orientačný. Práca, prestávky a saldo vychádzajú zo serverového výpočtu."
+        }
+
+    @app.get("/api/me/calendar")
+    def my_calendar(year:int=Query(ge=2020,le=2100),month:int=Query(ge=1,le=12),
+        employee=Depends(mine),session:Session=Depends(db)):
+        """Only events/requests belonging to the authenticated employee; never a supplied employee_id."""
+        tz=ZoneInfo("Europe/Bratislava")
+        begin=date(year,month,1)
+        end=date(year,month,monthrange(year,month)[1])
+        first=datetime.combine(begin-timedelta(days=1),time.min,tz).astimezone(timezone.utc)
+        stop=datetime.combine(end+timedelta(days=2),time.min,tz).astimezone(timezone.utc)
+        attendance=session.scalars(select(Event).where(
+            Event.employee_id==employee.id,Event.at>=first,Event.at<stop
+        ).order_by(Event.at,Event.id)).all()
+        own_events=[]
+        for item in attendance:
+            when=item.at.replace(tzinfo=timezone.utc) if item.at.tzinfo is None else item.at
+            local=when.astimezone(tz)
+            if begin<=local.date()<=end:
+                own_events.append({"day":local.date().isoformat(),
+                                   "time":local.strftime("%H:%M"),
+                                   "kind":item.kind,"origin":item.origin})
+        absences=session.scalars(select(Absence).where(
+            Absence.employee_id==employee.id,Absence.start<=end,Absence.end>=begin
+        ).order_by(Absence.start,Absence.id)).all()
+        return {"year":year,"month":month,"events":own_events,
+                "absences":[{"id":a.id,"kind":a.kind,"start":a.start.isoformat(),
+                             "end":a.end.isoformat(),"status":a.status,
+                             "minutes":a.minutes} for a in absences]}
+
+    @app.post("/api/me/absences",status_code=201)
+    def create_absence(data:SelfAbsence,account=Depends(current_account),employee=Depends(mine),session:Session=Depends(db)):
+        if data.kind not in ALLOWED:raise HTTPException(422,"Neplatný druh žiadosti")
+        if data.kind=="home_office" and data.minutes is not None:
+            raise HTTPException(422,"Home office je vždy celodenný, po schválení automaticky 8 hodín bez pípania")
+        if data.end<data.start or (data.end-data.start).days>366:raise HTTPException(422,"Neplatné obdobie")
+        from main import is_closed_range
+        if is_closed_range(session,data.start,data.end):raise HTTPException(409,"Zvolené obdobie je uzavreté")
+        # No client-controlled employee ID: derive identity from verified token.
+        item=Absence(employee_id=employee.id,kind=data.kind,start=data.start,end=data.end,minutes=data.minutes,status=("approved" if data.kind in {"ocr","sick"} else "pending"),note=data.note)
+        session.add(item);session.flush()
+        audit(session,account.username,"self.absence.create",str(item.id));session.commit()
+        return {"id":item.id,"status":item.status}

@@ -1,0 +1,21 @@
+# VOLITEĽNÁ REFERENČNÁ ŠABLÓNA. NESYNCHRONIZOVAŤ BEZ KONTROLY SECRETS!
+services:
+  - type: web
+    name: sk-dochadzka-portal
+    runtime: docker
+    repo: https://github.com/robo92T/APP
+    branch: feature/sk-dochadzka
+    region: frankfurt
+    plan: free
+    dockerfilePath: dochadzka/Dockerfile
+    dockerContext: dochadzka
+    healthCheckPath: /health
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: sk-dochadzka-db
+          property: connectionString
+databases:
+  - name: sk-dochadzka-db
+    region: frankfurt
+    plan: free # UPOZORNENIE: 30-dňová expirácia. Na reálne dáta zmeniť na schválený platený plán.
