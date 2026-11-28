@@ -73,3 +73,48 @@ označenie `lekár` nesmie automaticky zmeniť právny nárok.
 - Nina Testovacia – sprevádzanie (26.11.2026)
 
 Údaje sú iba na ukážku; preview používa dočasnú SQLite.
+
+
+## Aktualizácia v12 – presné rozdelenie práce a prekážok
+
+**Odpracované minúty v hromadnom výkaze:** dokončené záznamy
+príchod/odchod plus doplnková, schválená pracovná klasifikácia
+`business_trip`, `service_errand`, `home_office` alebo
+`training`. Do odpracovaných hodín vstupuje len ich pracovná
+časť, ktorá ešte nie je započítaná pípnutím; práca podľa pípnutí
+sa nepričítava druhýkrát. Evidencia cestovného príkazu bez klasifikácie
+iba zobrazuje trvanie cesty a nikdy automaticky nevytvára odpracované hodiny.
+
+**Uznané voľno (doplnenie fondu):** dovolenka, lekár, sprevádzanie,
+platené pracovné voľno a ďalšie zložky, ktoré sú v legacy výpočte
+evidované ako platené prekážky. Nie sú to odpracované hodiny.
+
+**PN, OČR a ostatné neprítomnosti:** osobitné časové stĺpce
+vrátane PN, OČR, materskej, otcovskej, rodičovskej, neplateného
+voľna, neplateného lekára a sprevádzania, školení, svadby,
+pohrebu, darovania krvi a inej neprítomnosti. PN/OČR
+sa neklasifikujú ako odpracované ani ako bežné platené
+voľno. Neprítomnosť sa uvádza v rozsahu plánovaného fondu
+daného dňa, prípadne zadaných minút.
+
+**Saldo:** odpracované + uznané voľno – fond. Ak klasifikácia
+môže mať obsahový prekryv so záznamom pípnutia, systém upozorní
+HR; odpracované i uznané minúty sú pri doplnení obmedzené
+zostávajúcim plánovaným fondom. Nadčasy sa touto vrstvou
+samostatne neschvaľujú.
+
+V `Zobrazené stĺpce` sú voliteľne všetky vyššie uvedené
+zložky v **dennom aj mesačnom** pohľade. Po zmene zostavy
+sa používa nová verzia lokálneho výberu, aby sa nezdedil
+starý zoznam s chýbajúcimi kategóriami.
+
+**Oprava stavu prítomnosti:** sobotňajší alebo iný neskorší
+deň nemá automaticky ukazovať „Na pracovisku“ z dlho
+otvoreného starého pípnutia. Prítomnosť sa odvodzuje iba
+z nedávneho záznamu. Pri neuzavretej dlhšej zmene sa však
+musí vykonať personálna kontrola.
+
+**Dôležitá hranica:** Hromadný výkaz a jeho CSV/XLSX používajú
+upravené pravidlá, ale existujúce individuálne PDF a finálny
+mzdový export ešte používajú starší samostatný výpočtový
+modul. Rozdiely sa musia vyriešiť pred ostrými mzdami.
