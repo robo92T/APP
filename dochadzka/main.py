@@ -398,8 +398,11 @@ install_event_corrections(app,Base,Employee,Event,engine,db,require_role,audit,i
 from backup_worker import install as install_backup_worker
 install_backup_worker(app,Base,engine,db,require_role,audit,DATABASE_IS_PERSISTENT)
 
+from wage_components import install as install_wage_components
+WageComponent=install_wage_components(app,Base,Employee,engine,db,require_role,audit,is_closed_range)
+
 from group_report import install as install_group_report
-install_group_report(app,Employee,Event,Absence,Shift,Base,db,require_role)
+install_group_report(app,Employee,Event,Absence,Shift,WageComponent,Base,db,require_role)
 
 from aktion_workflows import install as install_aktion_workflows
 install_aktion_workflows(app,Base,Employee,Absence,engine,db,_current_account,require_role,audit,is_closed_range)
