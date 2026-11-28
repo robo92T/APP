@@ -89,8 +89,9 @@ function showAttendanceDay(mode="attendance"){
    '<p class="bid-timeline-footnote">Schválený home office predstavuje automatický záznam 8 hodín bez GPS. Pri terénnej práci časová os zobrazuje len potvrdené pípnutia; nie všetky automatické prestávky.</p>';
 }
 async function openAttendance(year,month,selected){
- const current=fromKey(today());year=year||current.getFullYear();month=month||current.getMonth()+1;
- const period=monthKey(year,month),prev=state.attendance;
+ const current=fromKey(today()),prev=state.attendance;
+ year=year||prev?.year||current.getFullYear();month=month||prev?.month||current.getMonth()+1;
+ const period=monthKey(year,month);
  selected=selected||((prev&&prev.year===year&&prev.month===month)?prev.selected:(period===today().slice(0,7)?today():dayKey(year,month,1)));
  const [times,calendar]=await Promise.all([api("/api/me/attendance?year="+year+"&month="+month),api("/api/me/calendar?year="+year+"&month="+month)]);
  const byDay=daysWithAbsences(calendar.absences,year,month),marks={};
@@ -133,8 +134,9 @@ function showRequestsDay(){
  if(form){form.elements.start.value=s.selected;form.elements.end.value=s.selected}
 }
 async function openRequests(year,month,selected){
- const current=fromKey(today());year=year||current.getFullYear();month=month||current.getMonth()+1;
- const period=monthKey(year,month),prev=state.requests;
+ const current=fromKey(today()),prev=state.requests;
+ year=year||prev?.year||current.getFullYear();month=month||prev?.month||current.getMonth()+1;
+ const period=monthKey(year,month);
  selected=selected||((prev&&prev.year===year&&prev.month===month)?prev.selected:(period===today().slice(0,7)?today():dayKey(year,month,1)));
  const calendar=await api("/api/me/calendar?year="+year+"&month="+month);
  const byDay=daysWithAbsences(calendar.absences,year,month),marks={};
