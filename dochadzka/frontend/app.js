@@ -46,8 +46,49 @@ const [reviewYear,reviewMonth]=d.period.split('-').map(Number);
 const ownDays=await api('/api/me/attendance?year='+reviewYear+'&month='+reviewMonth).catch(()=>({rows:[],total_saldo_minutes:0}));
 const reviewStatus=await api('/api/workflow/my-month?year='+reviewYear+'&month='+reviewMonth).catch(()=>({status:'pending'}));
 $('#content').innerHTML='<p class="intro">Vitaj, <strong>'+esc(d.name)+'</strong>. Tu je prehľad tvojich vlastných údajov za '+esc(d.period)+'.</p><div class="stats"><button type="button" class="stat stat-action" data-go="reports" aria-label="Otvoriť moju dochádzku"><div class="stat-icon">◷</div><div class="value">'+fmt(d.worked_minutes)+'</div><small>Moja dochádzka</small></button><button type="button" class="stat stat-action" data-go="requests" aria-label="Otvoriť moje žiadosti"><div class="stat-icon">▣</div><div class="value">'+d.requests.length+'</div><small>Moje žiadosti</small></button><button type="button" class="stat stat-action" data-go="reports" aria-label="Zobraziť moje pípnutia"><div class="stat-icon">◈</div><div class="value">'+(d.last_event?esc(d.last_event.kind):'—')+'</div><small>Posledné pípnutie</small></button><button type="button" class="stat stat-action" data-go="accounts" aria-label="Otvoriť môj účet"><div class="stat-icon">♙</div><div class="value">'+fmt(d.weekly_minutes)+'</div><small>Môj účet</small></button></div><div class="panel"><div class="section-top"><h3>Moje žiadosti</h3><button class="primary" data-go="requests">+ Nová žiadosť</button><button id="selfPdf" class="secondary">Môj výkaz PDF</button></div><div class="scroll"><table><thead><tr><th>Typ</th><th>Od</th><th>Do</th><th>Stav</th></tr></thead><tbody>'+d.requests.map(x=>'<tr><td>'+esc(x.kind)+'</td><td>'+esc(x.start)+'</td><td>'+esc(x.end)+'</td><td><span class="pill '+esc(x.status)+'">'+esc(x.status)+'</span></td></tr>').join('')+'</tbody></table></div></div><div class="notice">'+esc(d.note)+(d.warnings.length?' Upozornenia: '+d.warnings.map(esc).join(', '):'')+'</div>';
-  const remote=document.createElement('div');remote.className='panel';remote.innerHTML='<div class="section-top"><div><h3>Home office · pípnutie na diaľku</h3><span class="muted">Serverový čas, prihlásený účet a iba v schválený deň</span></div><span class="pill '+(remoteStatus.approved_home_office?'approved':'pending')+'">'+(remoteStatus.approved_home_office?'Schválené':'Nie je schválené')+'</span></div><p class="intro">Aktuálny stav: <strong>'+esc(remoteStatus.state==='working'?'Pracujem':remoteStatus.state==='break'?'Prestávka':'Mimo práce')+'</strong></p><label class="gr-gps-check"><input id="remoteAskGps" type="checkbox"> Voliteľne jednorazovo poskytnúť polohu pri pípnutí. Súradnice sa neukladajú.</label><div class="actions"><button data-remote-kind="in" class="primary" '+(!remoteStatus.remote_punch_enabled||remoteStatus.state!=='off'?'disabled':'')+'>Príchod · home office</button><button data-remote-kind="break_start" class="secondary" '+(!remoteStatus.remote_punch_enabled||remoteStatus.state!=='working'?'disabled':'')+'>Prestávka</button><button data-remote-kind="break_end" class="secondary" '+(!remoteStatus.remote_punch_enabled||remoteStatus.state!=='break'?'disabled':'')+'>Koniec prestávky</button><button data-remote-kind="out" class="secondary" '+(!remoteStatus.remote_punch_enabled||remoteStatus.state!=='working'?'disabled':'')+'>Odchod</button></div><p class="subtle">Home office musí najprv schváliť HR. GPS nie je dôkazom výkonu práce a je voliteľné. Neprebieha priebežné sledovanie.</p>';$('#content').append(remote);
-  document.querySelectorAll('[data-remote-kind]').forEach(btn=>btn.onclick=async()=>{if(!confirm('Zaznamenať '+btn.textContent+' podľa času servera?'))return;btn.disabled=true;const p={kind:btn.dataset.remoteKind};try{if($('#remoteAskGps').checked){if(!navigator.geolocation)throw Error('Geolokácia nie je dostupná. Vypni GPS alebo použi podporovaný prehliadač.');const coord=await new Promise((resolve,reject)=>navigator.geolocation.getCurrentPosition(x=>resolve(x.coords),reject,{enableHighAccuracy:false,timeout:12000,maximumAge:0}));p.gps_lat=coord.latitude;p.gps_lon=coord.longitude;p.gps_accuracy_m=coord.accuracy;p.gps_permission_confirmed=true;}await api('/api/me/remote-punch',{method:'POST',body:JSON.stringify(p)});toast('Home office pípnutie uložené');employeeDashboard()}catch(e){toast(e.message||'Pípnutie zlyhalo',true);btn.disabled=false}});
+  // Home office is an approved automatic 8-hour day, never a GPS punch.
+  // Field GPS buttons are only rendered for an administrator-authorized employee.
+  if(remoteStatus.approved_home_office){
+    const todayRow=ownDays.rows.find(row=>row.day===remoteStatus.today);
+    const auto=Number(todayRow?.home_office_auto_minutes||0);
+    const panel=document.createElement('div');panel.className='panel';
+    panel.innerHTML='<div class="section-top"><div><h3>Home office · automatická dochádzka</h3>'+
+      '<span class="muted">Schválené HR, bez GPS a bez pípania</span></div>'+
+      '<span class="pill approved">Schválené</span></div>'+
+      '<div class="notice">'+(auto===480
+        ?'<strong>8:00 h automaticky započítaných</strong> do dochádzky za dnešný deň.'
+        :'<strong>Home office schválený.</strong> Pri dni bez pracovného fondu alebo pri existujúcich pípnutiach treba vykázanie preveriť.')+
+      '</div><p class="subtle">Žiadne zadávanie polohy, príchodov ani odchodov sa pri schválenom home office nevyžaduje.</p>';
+    $('#content').append(panel);
+  }else if(remoteStatus.field_punch_enabled){
+    const field=document.createElement('div');field.className='panel';
+    field.innerHTML='<div class="section-top"><div><h3>Terénna práca · GPS pípnutie</h3>'+
+      '<span class="muted">Individuálne povolené administrátorom</span></div>'+
+      '<span class="pill approved">Povolené</span></div>'+
+      '<p class="intro">Aktuálny stav: <strong>'+esc(remoteStatus.state==='working'?'Pracujem':remoteStatus.state==='break'?'Prestávka':'Mimo práce')+'</strong></p>'+
+      '<div class="actions"><button data-remote-kind="in" class="primary" '+(!remoteStatus.remote_punch_enabled||remoteStatus.state!=='off'?'disabled':'')+'>Príchod v teréne</button>'+
+      '<button data-remote-kind="break_start" class="secondary" '+(!remoteStatus.remote_punch_enabled||remoteStatus.state!=='working'?'disabled':'')+'>Začiatok prestávky</button>'+
+      '<button data-remote-kind="break_end" class="secondary" '+(!remoteStatus.remote_punch_enabled||remoteStatus.state!=='break'?'disabled':'')+'>Koniec prestávky</button>'+
+      '<button data-remote-kind="out" class="secondary" '+(!remoteStatus.remote_punch_enabled||remoteStatus.state!=='working'?'disabled':'')+'>Odchod z terénu</button></div>'+
+      '<p class="subtle">Až po potvrdení pípnutia sa jednorazovo vyžiada poloha. Súradnice sa neukladajú a priebežné sledovanie neprebieha.</p>';
+    $('#content').append(field);
+    field.querySelectorAll('[data-remote-kind]').forEach(btn=>btn.onclick=async()=>{
+      if(!confirm('Zaznamenať '+btn.textContent+' podľa času servera? Pri tomto terénnom pípnutí sa jednorazovo overí GPS poloha, ale súradnice sa neukladajú.'))return;
+      btn.disabled=true;
+      try{
+        if(!navigator.geolocation)throw Error('GPS nie je v tomto prehliadači dostupné.');
+        const coord=await new Promise((resolve,reject)=>navigator.geolocation.getCurrentPosition(
+          position=>resolve(position.coords),reject,
+          {enableHighAccuracy:true,timeout:15000,maximumAge:0}
+        ));
+        await api('/api/me/remote-punch',{method:'POST',body:JSON.stringify({
+          kind:btn.dataset.remoteKind,gps_lat:coord.latitude,gps_lon:coord.longitude,
+          gps_accuracy_m:coord.accuracy,gps_permission_confirmed:true
+        })});
+        toast('Terénne pípnutie zaznamenané');await employeeDashboard();
+      }catch(error){toast(error.message||'Terénne pípnutie zlyhalo',true);btn.disabled=false}
+    });
+  }
   const own=document.createElement('div');own.className='panel';own.innerHTML='<div class="section-top"><div><h3>Moja denná dochádzka</h3><span class="muted">Príchody, odchody, home office, prestávky a saldo</span></div><strong>Saldo: '+groupReportHour(ownDays.total_saldo_minutes,true)+'</strong></div><div class="scroll"><table><thead><tr><th>Deň</th><th>Príchod</th><th>Odchod</th><th>Práca</th><th>Prestávka</th><th>Fond</th><th>Saldo</th><th>Zložka</th></tr></thead><tbody>'+ownDays.rows.map(x=>'<tr><td>'+esc(x.day)+'</td><td>'+esc(x.in||'—')+'</td><td>'+esc(x.out||'—')+'</td><td>'+groupReportHour(x.worked_minutes)+'</td><td>'+groupReportHour(x.break_minutes)+'</td><td>'+groupReportHour(x.planned_minutes)+'</td><td>'+groupReportHour(x.saldo_minutes,true)+'</td><td>'+esc(x.component==='home_office'?'Home office':x.component||'Práca')+'</td></tr>').join('')+'</tbody></table></div><p class="subtle">'+esc(ownDays.note||'Údaje sú orientačné.')+'</p>';$('#content').append(own);
   const review=document.createElement('div');review.className='panel';review.innerHTML='<div class="section-top"><div><h3>Kontrola mojej dochádzky</h3><span class="muted">Skontroluj svoj mesačný výkaz a potom ho potvrď.</span></div><span class="pill">'+esc(reviewStatus.status==='confirmed'?'Potvrdené vedúcim':reviewStatus.status==='reviewed'?'Skontrolované':'Čaká na kontrolu')+'</span></div><button id="reviewMyMonth" class="primary" '+(reviewStatus.status!=='pending'?'disabled':'')+'>Označiť ako skontrolované</button><p class="subtle">Kontrola neuzatvára dochádzku ani nemodifikuje pípnutia.</p>';$('#content').append(review);
   $('#reviewMyMonth').onclick=async()=>{if(!confirm('Potvrdiť kontrolu svojho výkazu za '+d.period+'?'))return;try{await api('/api/workflow/review',{method:'POST',body:JSON.stringify({employee_id:currentUser.employee_id,year:reviewYear,month:reviewMonth,note:'Kontrola vlastného výkazu'})});toast('Kontrola zaznamenaná');employeeDashboard()}catch(e){toast(e.message,true)}};
@@ -134,6 +175,34 @@ async function employeesView(){
   const [people,templates]=await Promise.all([api('/api/hr/employees'),api('/api/hr/shift-templates')]);
   hrRows=people;hrTemplates=templates;
   $('#content').innerHTML='<div class="panel"><div class="section-top"><div><h3>Zamestnanci a účty</h3><span class="muted">'+people.length+' zamestnancov · kliknutím otvoríš detail</span></div><div class="actions"><input id="hrSearch" placeholder="Hľadať meno, číslo, útvar…" aria-label="Hľadať zamestnancov"><label class="field hr-period"><span>Obdobie PDF</span><input id="hrPdfMonth" type="month" value="'+localDate().slice(0,7)+'"></label><button class="primary" id="hrNew">+ Nový zamestnanec</button></div></div><div id="hrGrid" class="scroll"></div></div><div class="panel"><div class="section-top"><h3>Pracovné zmeny a šablóny</h3><button class="secondary" id="hrNewTemplate">+ Nová šablóna zmeny</button></div><div class="shift-pills">'+templates.map(t=>'<span class="shift-pill">'+esc(t.name)+' · '+esc(t.start)+'–'+esc(t.end)+'</span>').join('')+'</div><p class="subtle">Šablóna v profile nastaví predvolený režim zamestnanca. Konkrétne zmeny po dňoch sa plánujú v časti Zmeny a plán.</p></div><div id="hrModalHost"></div>';
+  if(currentUser?.role==='admin'){
+    const accessPanel=document.createElement('div');accessPanel.className='panel';
+    accessPanel.innerHTML='<div class="section-top"><div><h3>Povolenia terénneho GPS pípania</h3>'+
+      '<span class="muted">Iba administrátor určuje, ktorí zamestnanci smú pípať cez mobil mimo pracoviska.</span></div></div>'+
+      '<p class="subtle">Predvolene zakázané. Schválený home office sem nepatrí – automaticky sa vykáže ako 8 hodín bez GPS.</p>'+
+      '<div id="fieldPermissionList" class="bid-field-permission-list" aria-live="polite"></div>';
+    $('#hrModalHost').before(accessPanel);
+    const loadPermissions=async()=>{
+      const list=await api('/api/admin/field-punch-permissions');
+      $('#fieldPermissionList').innerHTML=list.map(p=>'<div class="bid-field-access-row">'+
+        '<span><strong>'+esc(p.name)+'</strong><small>'+(p.enabled?'Terénne pípnutie povolené':'Bez povolenia')+'</small></span>'+
+        '<button type="button" class="'+(p.enabled?'secondary':'primary')+' mini" data-field-permission="'+p.employee_id+'" data-field-enabled="'+p.enabled+'" '+(!p.active?'disabled':'')+'>'+
+        (p.enabled?'Zakázať GPS':'Povoliť GPS')+'</button></div>').join('');
+      accessPanel.querySelectorAll('[data-field-permission]').forEach(btn=>btn.onclick=async()=>{
+        const enable=btn.dataset.fieldEnabled!=='true';
+        if(!confirm((enable?'Povoliť':'Zakázať')+' terénne GPS pípnutie vybranému zamestnancovi?'))return;
+        btn.disabled=true;
+        try{
+          await api('/api/admin/field-punch-permissions/'+btn.dataset.fieldPermission,{
+            method:'PATCH',body:JSON.stringify({enabled:enable})
+          });
+          toast('Oprávnenie na terénne GPS pípnutie aktualizované');
+          await loadPermissions();
+        }catch(error){toast(error.message||'Nepodarilo sa uložiť povolenie.',true);btn.disabled=false}
+      });
+    };
+    try{await loadPermissions()}catch(error){$('#fieldPermissionList').textContent=error.message||'Oprávnenia sa nepodarilo načítať.'}
+  }
   const grid=()=>{
     const q=($('#hrSearch').value||'').trim().toLocaleLowerCase('sk-SK');
     const shown=people.filter(p=>[p.name,p.personal_number,p.department,p.job_title].some(v=>String(v||'').toLocaleLowerCase('sk-SK').includes(q)));
