@@ -139,6 +139,23 @@ def seed_preview(Base,engine,Employee,Event,Absence,Shift,audit):
                 if ix==0:
                     session.execute(insert(travel_meals).values(trip_id=trip_id,day=date(2026,11,18),
                         breakfast=False,lunch=True,dinner=False,cannot_use_provided=False))
+        component_table=Base.metadata.tables.get("wage_component")
+        if component_table is not None:
+            # Fictitious payroll-component examples for the consolidated report.
+            for employee_index,day,kind,mode,start_hour,end_hour,reason in [
+                (3,date(2026,11,18),"business_trip","punched",None,None,
+                 "Ukážková služobná cesta – čas podľa zaznamenaných pípnutí"),
+                (7,date(2026,11,19),"service_errand","time_range",9,11,
+                 "Ukážkové služobné vybavovanie v meste"),
+                (8,date(2026,11,20),"home_office","punched",None,None,
+                 "Ukážková práca na home office podľa pípnutí")
+            ]:
+                start=datetime.combine(day,time(start_hour,0),TZ).astimezone(timezone.utc) if start_hour else None
+                stop=datetime.combine(day,time(end_hour,0),TZ).astimezone(timezone.utc) if end_hour else None
+                session.execute(insert(component_table).values(employee_id=created[employee_index].id,
+                    day=day,kind=kind,mode=mode,starts_at=start,ends_at=stop,
+                    note=reason,active=True,created_by="demo-system",
+                    created_at=datetime(2026,11,27,tzinfo=timezone.utc)))
         audit(session,"system","demo.seed","10 fictional employees, November 2026")
         session.commit()
         return {"seeded":True,"employees":len(created)}
