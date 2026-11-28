@@ -88,3 +88,84 @@
   #content .panel{padding:14px 12px}
 }
 @media(min-width:701px){.mobile-bottom-nav,.mobile-more-overlay{display:none!important}}
+
+
+/* Mobile/desktop accessible, clickable dashboard tiles */
+#content button.stat.stat-action{
+ display:flex;flex-direction:column;align-items:flex-start;text-align:left;
+ border:1px solid #e6ecf5;border-top:4px solid #efc823;
+ width:100%;font-family:inherit;color:#14243b;background:#fff;
+ cursor:pointer;appearance:none;-webkit-appearance:none;
+ min-height:148px;transition:box-shadow .16s ease,transform .16s ease,background .16s ease;
+ touch-action:manipulation;-webkit-tap-highlight-color:rgba(22,55,94,.12)
+}
+#content button.stat.stat-action:hover{background:#f8fbff;box-shadow:0 10px 24px #12396318}
+#content button.stat.stat-action:active{transform:scale(.985)}
+#content button.stat.stat-action:focus-visible{outline:3px solid #3b82f6;outline-offset:3px}
+#content button.stat.stat-action small{color:#697a8d}
+#content button.stat.stat-action .value{color:#122c4b}
+@media(max-width:700px){#content button.stat.stat-action{min-height:145px}}
+
+/* Employee interactive month calendars */
+#content .bid-calendar-panel,#content .bid-day-panel,#content .bid-request-panel{
+ background:#fff;border:1px solid #e4e9f1;border-radius:17px;
+ box-shadow:0 5px 16px rgba(17,45,79,.06);margin-bottom:15px;overflow:hidden
+}
+#content .bid-calendar-head{padding:18px 17px 16px;background:#153861;color:white}
+#content .bid-calendar-head h3{margin:0 0 15px;font-size:17px;color:#fff}
+#content .bid-calendar-controls{display:flex;justify-content:space-between;align-items:center;gap:12px}
+#content .bid-calendar-controls strong{font-size:17px;text-align:center;text-transform:capitalize;letter-spacing:.01em}
+#content .bid-calendar-controls button{border:1px solid #ffffff50;background:#ffffff1a;color:white;border-radius:12px;width:46px;height:46px;flex-shrink:0;display:grid;place-items:center;font-size:29px;font-weight:400;line-height:1;cursor:pointer;touch-action:manipulation}
+#content .bid-calendar-controls button:active{background:#f1c938;color:#17283f}
+#content .bid-calendar-weekdays,#content .bid-calendar-days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));text-align:center}
+#content .bid-calendar-weekdays{padding:13px 10px 4px;color:#65809a;font-size:11px;font-weight:800;letter-spacing:.035em}
+#content .bid-calendar-days{padding:7px 10px 13px;gap:3px}
+#content button.bid-calendar-day{appearance:none;-webkit-appearance:none;background:transparent;border:2px solid transparent;border-radius:12px;color:#263a51;min-width:0;height:59px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:4px;font-size:16px;font-weight:750;cursor:pointer;touch-action:manipulation}
+#content button.bid-calendar-day:nth-child(7n+6),#content button.bid-calendar-day:nth-child(7n+7){color:#9e5760}
+#content button.bid-calendar-day.today{border-color:#e3ba1c}
+#content button.bid-calendar-day.selected{background:#18518a;color:#fff!important;border-color:#18518a}
+#content button.bid-calendar-day:active{background:#eef5ff}
+#content button.bid-calendar-day:focus-visible{outline:3px solid #0b89e8;outline-offset:1px}
+#content .bid-calendar-outside{height:59px}
+#content .bid-calendar-dots{display:flex;gap:3px;justify-content:center;min-height:6px;max-width:100%}
+#content .bid-dot{display:inline-block;width:6px;height:6px;flex-shrink:0;border-radius:99px;background:#3688df}
+#content .bid-dot-work{background:#00b5c7}
+#content .bid-dot-approved{background:#65af37}
+#content .bid-dot-pending{background:#efba26}
+#content .bid-dot-rejected{background:#e76b65}
+#content .bid-month-totals{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:14px}
+#content .bid-month-totals span{flex:1 1 125px;padding:13px;border:1px solid #dfe9f3;border-radius:12px;color:#63788f;background:#eef5fb;display:flex;flex-direction:column;gap:3px;font-size:12px}
+#content .bid-month-totals b{font-size:19px;color:#163861}
+#content .bid-day-panel{padding:17px}
+#content .bid-day-title{display:flex;justify-content:space-between;gap:14px;align-items:center;margin-bottom:14px;flex-wrap:wrap}
+#content .bid-day-title strong{text-transform:capitalize;font-size:17px;color:#1a3b60}
+#content .bid-day-title span{font-size:12px;color:#68809b}
+#content .bid-activity{border-top:1px solid #edf2f6;padding:14px 0;display:flex;align-items:center;gap:12px}
+#content .bid-activity>span{min-width:50px;color:#315d83;font-weight:800;font-variant-numeric:tabular-nums}
+#content .bid-activity strong{flex:1;min-width:0;font-size:14px}
+#content .bid-activity small{font-size:11px;color:#8490a2;text-align:right}
+#content .bid-activity-absence{color:#6e6426}
+#content .bid-cal-summary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;padding-top:15px;border-top:1px solid #e9eff5}
+#content .bid-cal-summary span{font-size:12px;color:#4b6584;background:#f2f6fb;padding:8px 10px;border-radius:8px}
+#content .bid-empty{color:#7d8c9d;font-size:13px;margin:9px 0 16px}
+#content .bid-calendar-legend{display:flex;gap:12px;flex-wrap:wrap;margin:0 0 14px;padding:3px 4px;font-size:11px;color:#647992}
+#content .bid-calendar-legend span{display:inline-flex;align-items:center;gap:5px}
+#content .bid-request-panel{padding:19px}
+#content .bid-request-panel h3{margin:0 0 14px;color:#183a5f;font-size:18px}
+#content .bid-request-panel form{display:grid;gap:12px}
+#content .bid-request-panel form label{display:grid;gap:6px;color:#58718d;font-size:12px;font-weight:750}
+#content .bid-request-panel input,#content .bid-request-panel select{width:100%;min-width:0;border:1px solid #ced9e6;border-radius:9px;padding:12px;background:#fff;color:#143453;font-size:16px;min-height:46px}
+#content .bid-request-dates{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+#content .bid-request-panel form button{min-height:48px}
+@media(max-width:440px){
+ #content .bid-calendar-head{padding:16px 13px}
+ #content .bid-calendar-head h3{font-size:15px}
+ #content .bid-calendar-days{gap:1px;padding:7px 5px 12px}
+ #content button.bid-calendar-day{height:53px;font-size:15px}
+ #content .bid-calendar-outside{height:53px}
+ #content .bid-calendar-controls strong{font-size:15px}
+ #content .bid-day-panel{padding:13px}
+ #content .bid-activity{gap:6px}
+ #content .bid-activity>span{min-width:43px}
+ #content .bid-activity strong{font-size:13px}
+}
