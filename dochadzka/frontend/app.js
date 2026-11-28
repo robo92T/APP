@@ -273,12 +273,81 @@ async function setupMfa(){
   }catch(e){toast(e.message,true)}
 }
 document.querySelectorAll('.nav').forEach(b=>b.onclick=()=>navigate(b.dataset.view));document.addEventListener('click',e=>{const go=e.target.closest('[data-go]');if(go)navigate(go.dataset.go)});$('#logout').onclick=logout;$('#loginForm').onsubmit=async e=>{e.preventDefault();try{const d=await api('/api/auth/login',{method:'POST',body:JSON.stringify({username:$('#username').value,password:$('#password').value,otp:$('#loginOtp').value.trim()||null})});token=d.access_token;sessionStorage.setItem('attendance_token',token);$('#password').value='';$('#loginOtp').value='';await init()}catch(err){toast(err.message,true)}};init();
-// Installable web app. Never store employee API responses in service-worker cache.
+// Progressive Web App: native prompt when available; platform instructions otherwise.
+// No background attendance, offline punch queue, or personnel API caching.
 let installPrompt=null;
-window.addEventListener('beforeinstallprompt',event=>{event.preventDefault();installPrompt=event;$('#installApp')?.classList.remove('hidden')});
-$('#installApp')?.addEventListener('click',async()=>{if(!installPrompt)return;installPrompt.prompt();await installPrompt.userChoice;installPrompt=null;$('#installApp').classList.add('hidden')});
-window.addEventListener('appinstalled',()=>{$('#installApp')?.classList.add('hidden');toast('Aplikácia nainštalovaná')});
-if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(()=>{}))}
+const pwaStandalone=()=>window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone===true;
+function pwaPlatform(){
+ const ua=navigator.userAgent||'';
+ if(/iPad|iPhone|iPod/.test(ua)||(/Macintosh/.test(ua)&&navigator.maxTouchPoints>1))return 'ios';
+ if(/Android/i.test(ua))return 'android';
+ if(/Windows/i.test(ua))return 'windows';
+ if(/Macintosh|Mac OS X/.test(ua))return 'mac';
+ return 'other';
+}
+function pwaHelp(){
+ const kind=pwaPlatform();
+ const isSafari=/Safari/i.test(navigator.userAgent)&&!/CriOS|FxiOS|EdgiOS|Chrome|Chromium|Edg/i.test(navigator.userAgent);
+ if(kind==='ios')return [
+  'Otvor https://sk-dochadzka-preview.onrender.com/ v Safari na iPhone alebo iPade.',
+  'V Safari otvor Zdieľať (ikona štvorca so šípkou).',
+  'Vyber Pridať na plochu (Add to Home Screen) a potvrď Pridať.',
+  'Na domovskej obrazovke sa objaví ikona BID Dochádzka.'];
+ if(kind==='android')return [
+  'Otvor tento portál v Google Chrome na Androide.',
+  'Vpravo hore otvor menu ⋮.',
+  'Vyber Inštalovať aplikáciu alebo Pridať na plochu a potvrď.',
+  'Ikona BID Dochádzka sa zobrazí na domovskej obrazovke.'];
+ if(kind==='windows')return [
+  'Otvor tento portál v Microsoft Edge alebo Google Chrome.',
+  'Edge: menu ⋯ → Aplikácie → Nainštalovať túto lokalitu ako aplikáciu.',
+  'Chrome: menu ⋮ → Uložiť a zdieľať / Prenášať a zdieľať → Inštalovať stránku ako aplikáciu (názvy sa môžu líšiť).',
+  'Po inštalácii môžeš ikonu pripnúť na panel úloh, ponuku Štart a podľa ponuky prehliadača vytvoriť odkaz na ploche.'];
+ if(kind==='mac')return [
+  'Otvor portál v Safari alebo Chrome.',
+  'Safari: Súbor → Pridať do Docku (vyžaduje kompatibilný macOS).',
+  'Chrome: menu ⋮ → Inštalovať stránku ako aplikáciu.',
+  'Aplikáciu potom otvoríš z Docku alebo Launchpadu.'];
+ return ['Otvor aplikáciu v prehliadači s podporou PWA.','V menu vyhľadaj Inštalovať alebo Pridať na domovskú obrazovku.'];
+}
+function openPwaInstallDialog(){
+ const modal=$('#pwaInstallModal');
+ if(!modal)return;
+ const list=$('#pwaInstallSteps');
+ list.innerHTML=pwaHelp().map(step=>'<li>'+esc(step)+'</li>').join('');
+ const native=$('#pwaNativeInstall');
+ native.classList.toggle('hidden',!installPrompt||pwaStandalone());
+ $('#pwaInstallMessage').textContent=pwaStandalone()?
+  'BID Dochádzka už beží ako nainštalovaná webová aplikácia.':
+  'Jedným kliknutím alebo podľa nasledujúceho návodu si pridáš ikonu BID Dochádzka na zariadenie.';
+ modal.classList.remove('hidden');
+}
+function closePwaInstallDialog(){$('#pwaInstallModal')?.classList.add('hidden')}
+window.addEventListener('beforeinstallprompt',event=>{
+ event.preventDefault();
+ installPrompt=event;
+ // The install button stays visible even when the browser does not fire the event.
+});
+document.querySelectorAll('[data-install-app]').forEach(button=>button.addEventListener('click',openPwaInstallDialog));
+$('#pwaInstallClose')?.addEventListener('click',closePwaInstallDialog);
+$('#pwaInstallDone')?.addEventListener('click',closePwaInstallDialog);
+$('#pwaInstallModal')?.addEventListener('click',event=>{if(event.target.id==='pwaInstallModal')closePwaInstallDialog()});
+document.addEventListener('keydown',event=>{if(event.key==='Escape')closePwaInstallDialog()});
+$('#pwaNativeInstall')?.addEventListener('click',async()=>{
+ if(!installPrompt)return;
+ try{
+  const promptEvent=installPrompt;
+  installPrompt=null;
+  await promptEvent.prompt();
+  const choice=await promptEvent.userChoice;
+  if(choice.outcome==='accepted'){closePwaInstallDialog();toast('Inštalácia aplikácie bola potvrdená')}
+  else {toast('Inštaláciu si môžeš spustiť aj neskôr');openPwaInstallDialog()}
+ }catch(error){toast('Použi inštalačný postup v návode pre prehliadač',true);openPwaInstallDialog()}
+});
+window.addEventListener('appinstalled',()=>{installPrompt=null;closePwaInstallDialog();toast('BID Dochádzka bola nainštalovaná')});
+if('serviceWorker' in navigator){
+ window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js',{scope:'/'}).catch(error=>console.warn('PWA service worker:',error)));
+}
 
 async function updateStorageWarning(){
   try{
