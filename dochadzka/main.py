@@ -345,6 +345,15 @@ if STATIC_DIR.is_dir():
     def home_head(): return FileResponse(STATIC_DIR / "index.html")
     @app.get("/kiosk",include_in_schema=False)
     def kiosk_page(): return FileResponse(STATIC_DIR / "kiosk.html")
+    from pwa_icons import icon_png
+    from fastapi.responses import Response
+    @app.get("/pwa-icon-{size}.png",include_in_schema=False)
+    def pwa_icon(size:int):
+        from fastapi import HTTPException
+        if size not in (180,192,512):
+            raise HTTPException(404,"Unknown icon size")
+        return Response(content=icon_png(size),media_type="image/png",
+                        headers={"Cache-Control":"public,max-age=604800"})
     @app.get("/manifest.webmanifest",include_in_schema=False)
     def pwa_manifest(): return FileResponse(STATIC_DIR / "manifest.webmanifest",media_type="application/manifest+json")
     @app.get("/sw.js",include_in_schema=False)
