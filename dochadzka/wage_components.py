@@ -91,9 +91,15 @@ def install(app,Base,Employee,engine,db,require_role,audit,is_closed_range):
         existing=session.scalars(select(WageComponent).where(
             WageComponent.employee_id==data.employee_id,WageComponent.day==data.day,
             WageComponent.active==True)).all()
-        if existing:
-            # One classification/day avoids competing definitions and accidental double credits.
-            raise HTTPException(409,"Deň už má mzdovú klasifikáciu. Najprv ju auditovane zruš.")
+        for other in existing:
+            if other.kind==data.kind:
+                raise HTTPException(409,"Táto mzdová zložka už existuje pre daný deň")
+            if data.mode!="time_range" or other.mode!="time_range":
+                raise HTTPException(409,"Celodenné a pípnutím odvodené zložky nemožno kombinovať s inou zložkou v ten istý deň")
+            old_start=other.starts_at.replace(tzinfo=timezone.utc) if other.starts_at.tzinfo is None else other.starts_at.astimezone(timezone.utc)
+            old_end=other.ends_at.replace(tzinfo=timezone.utc) if other.ends_at.tzinfo is None else other.ends_at.astimezone(timezone.utc)
+            if start<old_end and end>old_start:
+                raise HTTPException(409,"Časové úseky dvoch mzdových zložiek sa prekrývajú")
         item=WageComponent(employee_id=e.id,day=data.day,kind=data.kind,mode=data.mode,
             starts_at=start,ends_at=end,note=data.note,created_by=actor.username)
         session.add(item);session.flush()
