@@ -244,12 +244,17 @@ def install(app,Employee,Event,Absence,Shift,WageComponent,Base,db,require_role)
                 r=next((x for x in daily if x["day"]==target),None)
                 if r is None:continue
                 interval_end=status_asof
-                last_punches=[e for e in records if utc_time(e.at)<=interval_end and e.kind!="void"]
+                # Only a recent event can indicate current presence. An old
+                # open "in" must not show every employee as on site on Saturday.
+                recent_cutoff=datetime.combine(target,time.min,TZ).astimezone(timezone.utc)-timedelta(hours=12)
+                last_punches=[e for e in records if recent_cutoff<=utc_time(e.at)<=interval_end and e.kind!="void"]
                 latest_punch=last_punches[-1] if last_punches else None
                 today_absences=[a for a in absence_list if a.start<=target<=a.end and a.status=="approved"]
                 absent_labels=[ABSENCE_LABELS.get(a.kind,a.kind) for a in today_absences]
                 is_current=target==current_day
                 state,last_state_at=state_for_date(last_punches,interval_end)
+                if state in ("present","break") and last_state_at and (interval_end-last_state_at)>timedelta(hours=14):
+                    state="unknown"
                 # For historical days, a finished punch does not imply "in the office now".
                 if not is_current:
                     state="history"
