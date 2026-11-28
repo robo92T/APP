@@ -80,3 +80,17 @@ def test_home_office_never_doubles_actual_punches():
     assert result["home_office_auto_minutes"]==0
     assert result["worked"]==450
     assert any("prekrýva" in x for x in result["warnings"])
+
+
+def test_approved_home_office_without_planned_shift_is_visible_but_flagged():
+    from types import SimpleNamespace
+    day=date(2026,12,16)
+    approved=SimpleNamespace(kind="home_office",start=day,end=day,minutes=None,status="approved")
+    # Another explicitly scheduled date creates a partial rota in this month.
+    shifts={date(2026,12,14):{"planned_minutes":450,"start_time":"08:00","end_time":"16:00"}}
+    r=next(x for x in build_rows(person(),[],shifts,[approved],2026,12) if x["day"]==day)
+    assert r["plan"]==0
+    assert r["home_office_auto_minutes"]==480
+    assert r["worked"]==480
+    assert r["saldo"]==0
+    assert any("fond musí preveriť HR" in warning for warning in r["warnings"])
