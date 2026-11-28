@@ -136,11 +136,11 @@ def install(app,Employee,Event,Absence,Shift,WageComponent,Base,db,require_role)
                     hi=min(end_utc,datetime.combine(day_cursor+timedelta(days=1),time.min,TZ).astimezone(timezone.utc))
                     travel_minutes[(trip["employee_id"],day_cursor)]+=max(0,int((hi-lo).total_seconds()//60))
                     day_cursor+=timedelta(days=1)
-        components_by=defaultdict(dict)
+        components_by=defaultdict(lambda:defaultdict(list))
         for comp in session.scalars(select(WageComponent).where(
             WageComponent.day>=period_start,WageComponent.day<=period_end,
             WageComponent.active==True)).all():
-            components_by[comp.employee_id][comp.day]=comp
+            components_by[comp.employee_id][comp.day].append(comp)
         def classify_day(employee_id,raw,approved_absences):
             day=raw["day"];plan=raw["plan"];worked=raw["worked"]
             values={"doctor_min":0,"accompany_min":0,"home_office_min":0,
@@ -157,31 +157,31 @@ def install(app,Employee,Event,Absence,Shift,WageComponent,Base,db,require_role)
                     values[k]=min(plan,values[k]+max(0,int(amount)))
                 elif absence.kind=="home_office":
                     values["home_office_min"]=worked
-            comp=components_by.get(employee_id,{}).get(day)
-            credit_extra=0
-            kind=None
-            if comp:
-                kind=comp.kind
+            selected=components_by.get(employee_id,{}).get(day,[])
+            credit_remaining=max(0,plan-worked-raw["credit"])
+            kinds=[]
+            for comp in selected:
+                kinds.append(comp.kind)
                 amount=get_mode_minutes(comp,plan,worked)
-                key=kind+"_min"
+                key=comp.kind+"_min"
                 if key in values:
-                    # Payroll component overrides the earlier same-day display classification,
-                    # rather than adding the same hours twice.
-                    values[key]=max(values[key],amount)
-                if kind in PAYROLL_CREDIT_KINDS and comp.mode!="punched":
-                    if kind in ("doctor","accompany") and raw["credit"]:
-                        # Existing approved leave already participates in the legacy
-                        # balance calculation. Do not double-credit it.
-                        credit_extra=0
+                    # Approved leave and manually classified hours may describe
+                    # the same interval. Never count them twice in the category.
+                    values[key]=max(values[key],amount) if comp.kind in ("doctor","accompany","home_office") else values[key]+amount
+                if comp.kind in PAYROLL_CREDIT_KINDS and comp.mode!="punched":
+                    if comp.kind in ("doctor","accompany") and raw["credit"]:
+                        # Legacy doctor/escort leave credit is already included.
+                        pass
                     else:
-                        credit_extra=min(amount,max(0,plan-worked-raw["credit"]))
+                        added=min(amount,credit_remaining)
+                        credit_extra+=added
+                        credit_remaining-=added
                         if worked and amount:warning.append("Mzdová zložka sa môže časovo prekrývať s pípnutím; over HR")
-                if kind=="home_office" and not values["home_office_min"]:
+                if comp.kind=="home_office" and not values["home_office_min"]:
                     values["home_office_min"]=worked
-            # Travel orders alone describe trip duration, not work and not
-            # automatic salary credit. The explicit HR classification defines it.
-            if (employee_id,day) in travel_dates and not values["business_trip_min"] and comp is None:
-                warning.append("Služobná cesta: trvanie cesty sa nerovná odpracovanému času; doplň mzdovú klasifikáciu")
+            kind=", ".join(WAGE_KINDS[k] for k in kinds) if kinds else None
+            if (employee_id,day) in travel_dates and not values["business_trip_min"] and not selected:
+                warning.append("Trvanie služobnej cesty nie je automaticky pracovný čas; doplň mzdovú klasifikáciu")
             return values,credit_extra,kind,warning
         report_rows=[]
         counts={"total":0,"present":0,"break":0,"absent":0,"away":0,"unrecorded":0,"warning":0}
@@ -240,6 +240,16 @@ def install(app,Employee,Event,Absence,Shift,WageComponent,Base,db,require_role)
                 if pending and not absent_labels:status="Žiadosť čaká";key="unrecorded"
                 wage_values,extra_credit,wage_kind,wage_warnings=classify_day(person.id,r,today_absences)
                 warning=list(r["warnings"])+wage_warnings
+                selected_kinds=[x.kind for x in components_by.get(person.id,{}).get(target,[])]
+                if selected_kinds and not on_trip and not is_ho and not today_absences:
+                    if all(k in ("doctor","accompany") for k in selected_kinds):
+                        status="Lekár / sprevádzanie";key="absent"
+                    elif "service_errand" in selected_kinds:
+                        status="Služobné dôvody";key="away"
+                    elif "business_trip" in selected_kinds:
+                        status="Služobná cesta";key="absent"
+                    elif "home_office" in selected_kinds:
+                        status="Home office";key="present" if r["worked"] else "unrecorded"
                 if is_current and state in ("present","break"):
                     warning.append("Otvorená zmena: odpracovaný čas zatiaľ nezahŕňa otvorený interval")
                 out={**common,"date":target.isoformat(),"status":status,"status_key":key,
@@ -250,7 +260,7 @@ def install(app,Employee,Event,Absence,Shift,WageComponent,Base,db,require_role)
                     "planned_min":r["plan"],"worked_min":r["worked"],
                     "break_min":r["breaks"],"credited_min":r["credit"]+extra_credit,
                     "saldo_min":r["saldo"]+extra_credit,**wage_values,
-                    "component":WAGE_KINDS.get(wage_kind) if wage_kind else "Služobná cesta" if on_trip else "Home office" if is_ho else ", ".join(absent_labels) if absent_labels else ("Práca" if r["worked"] else "—"),
+                    "component":wage_kind if wage_kind else "Služobná cesta" if on_trip else "Home office" if is_ho else ", ".join(absent_labels) if absent_labels else ("Práca" if r["worked"] else "—"),
                     "warnings":warning}
                 report_rows.append(out)
                 counts[key]+=1;counts["total"]+=1
