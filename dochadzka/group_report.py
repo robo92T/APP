@@ -59,7 +59,7 @@ MONTH_HEADERS=[
     ("night_min","Nočné (min)"),("saturday_min","Sobota (min)"),
     ("sunday_min","Nedeľa (min)"),("holiday_min","Sviatok (min)"),
     ("attendance_days","Dni s prácou"),
-    ("vacation_min","Dovolenka (min)"),("sick_min","PN (min)"),("ocr_min","OČR (min)"),
+    ("sick_min","PN (min)"),("ocr_min","OČR (min)"),
     ("doctor_unpaid_min","Lekár – neplatené (min)"),("accompany_unpaid_min","Sprevádzanie – neplatené (min)"),
     ("maternity_min","Materská dovolenka (min)"),("paternity_min","Otcovská dovolenka (min)"),
     ("parental_min","Rodičovská dovolenka (min)"),("unpaid_min","Neplatené voľno (min)"),
