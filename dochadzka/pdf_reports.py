@@ -155,8 +155,12 @@ def build_rows(employee,events,shifts,absences,year,month):
                 categories.append(absence.kind)
                 if absence.kind in credited_kinds:
                     credit+=absence.minutes if absence.minutes is not None and absence.start==absence.end else plan
-        credit=min(credit,plan)
-        if credit and rec["minutes"]:rec["warnings"].append("Prekryv práce a voľna")
+        requested_credit=min(credit,plan)
+        if requested_credit and rec["minutes"]:
+            rec["warnings"].append("Prekryv práce a plateného voľna – over, či nejde o duplicitné hodiny")
+        # No day may get more ordinary credited time than its unworked fund.
+        # This is not a determination of approved overtime.
+        credit=min(requested_credit,max(0,plan-rec["minutes"]))
         first_in=rec["ins"][0] if rec["ins"] else None
         last_out=rec["outs"][-1] if rec["outs"] else None
         output.append({"day":day,"in":first_in,"out":last_out,
