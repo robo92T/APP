@@ -460,3 +460,29 @@ if os.getenv("APP_ENV") == "preview" and os.getenv("DEMO_SEED") == "10":
     with SessionLocal() as _demo_session:
         print("BID_PREVIEW_TEST_EMPLOYEES=" +
               str(_demo_session.query(Employee).count()), flush=True)
+    # Optional fake employee account so the self-service calendar can be tested without admin access.
+    # Never create or reset real accounts. An existing account is always left unchanged.
+    _demo_password = os.getenv("DEMO_EMPLOYEE_PASSWORD", "")
+    if len(_demo_password) >= 12 and DATABASE_IS_PERSISTENT is False:
+        from auth import make_hash
+        with SessionLocal() as _demo_session:
+            _demo_emp = _demo_session.scalar(select(Employee).where(
+                Employee.name == "Filip Ukážkový"))
+            _demo_account = _demo_session.scalar(select(Account).where(
+                Account.username == "demo.zamestnanec"))
+            if _demo_emp and not _demo_account:
+                _demo_user = Account(
+                    username="demo.zamestnanec",
+                    role="employee",
+                    employee_id=_demo_emp.id,
+                    password_hash=make_hash(_demo_password))
+                _demo_session.add(_demo_user)
+                _demo_session.flush()
+                from sqlalchemy import insert
+                _demo_session.execute(insert(Base.metadata.tables["password_policy"]).values(
+                    account_id=_demo_user.id, must_change=False))
+                audit(_demo_session, "system", "demo.employee.account.create", "fictional employee")
+                _demo_session.commit()
+            print("BID_PREVIEW_EMPLOYEE_ACCOUNT_READY=" +
+                  str(bool(_demo_emp and (_demo_account or _demo_session.scalar(
+                      select(Account).where(Account.username=="demo.zamestnanec"))))),flush=True)
