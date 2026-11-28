@@ -131,6 +131,21 @@ async function scan(uid){
  }catch(error){message(error.message);beep(false)}
  finally{busy=false;$('#uid').focus()}
 }
+$('#nfcStart').onclick=async()=>{
+ if(!('NDEFReader' in window)){message('Web NFC vyžaduje podporovaný Android Chrome a NDEF čip. Použi USB čítačku.');return}
+ if(!cfg.id||!cfg.key){message('Najprv nastav terminál a jeho kľúč.');return}
+ try{
+  const reader=new NDEFReader();await reader.scan();
+  message('NFC je pripravené. Prilož NDEF čip k telefónu alebo tabletu.',true);
+  reader.onreading=ev=>{
+   const uid=(ev.serialNumber||'').trim().toUpperCase();
+   if(!uid){message('Čip neodovzdal sériové číslo. Použi RFID čítačku.');return}
+   scan(uid);
+  };
+  reader.onreadingerror=()=>message('NFC čip sa nepodarilo prečítať.');
+  $('#nfcStart').disabled=true;$('#nfcStart').textContent='NFC aktívne';
+ }catch(error){message('NFC sa nepodarilo aktivovať: '+error.message)}
+};
 $('#uid').addEventListener('keydown',e=>{if(e.key!=='Enter')return;e.preventDefault();const uid=$('#uid').value.trim();$('#uid').value='';if(uid)scan(uid)});
 window.addEventListener('online',flushQueue);
 setInterval(flushQueue,45000);
