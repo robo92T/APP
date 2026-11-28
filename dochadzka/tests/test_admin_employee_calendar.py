@@ -46,6 +46,13 @@ def test_administrator_month_calendar_and_employee_isolation():
         assert employee_login.status_code==200,employee_login.text
         own={"Authorization":"Bearer "+employee_login.json()["access_token"]}
         assert c.get(url,headers=own).status_code==403
+        # The HR-created account has a temporary password, which must be changed.
+        change=c.post("/api/auth/password",headers=own,json={
+            "old_password":"TestCalendarUser2026!",
+            "new_password":"CalendarUserChanged2026!"
+        })
+        assert change.status_code==200,change.text
+        assert c.get(url,headers=own).status_code==403
         self_calendar=c.get("/api/me/calendar?year=2026&month=11",headers=own)
         assert self_calendar.status_code==200,self_calendar.text
         assert all(x["day"].startswith("2026-11-") for x in self_calendar.json()["events"])
