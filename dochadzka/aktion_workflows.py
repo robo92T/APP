@@ -18,7 +18,7 @@ from sqlalchemy.orm import Mapped,mapped_column,Session
 
 KINDS={"vacation","doctor","accompany","doctor_unpaid","accompany_unpaid",
     "sick","ocr","maternity","paternity","parental","unpaid","paid_leave",
-    "business_trip","training","wedding","funeral","blood_donation","other"}
+    "business_trip","home_office","training","wedding","funeral","blood_donation","other"}
 NOTIFICATION={"ocr","sick","maternity","paternity","parental"}
 class PeriodAction(BaseModel):
     employee_id:int
