@@ -185,17 +185,33 @@ def build_rows(employee,events,shifts,absences,year,month):
                 categories.append(absence.kind)
                 if absence.kind in credited_kinds:
                     credit+=absence.minutes if absence.minutes is not None and absence.start==absence.end else plan
+        # Approved full-day home office is an administratively credited 8h workday:
+        # no synthetic in/out punches, no device location, no second punch required.
+        # Scheduled fund is the ceiling for saldo so a 7.5h contract doesn't acquire
+        # artificial overtime from the fixed 8h home-office attendance display.
+        home_office = "home_office" in categories
+        auto_home_office = 0
+        if home_office and applicable and plan>0:
+            if rec["minutes"] == 0:
+                auto_home_office = 480
+            else:
+                rec["warnings"].append("Home office sa prekrýva so skutočným pípnutím – automatických 8 h sa nepripočíta")
+        elif home_office and applicable:
+            rec["warnings"].append("Home office je schválený na deň bez plánovanej práce – automatické hodiny treba overiť")
+        recorded_work=rec["minutes"]+auto_home_office
         requested_credit=min(credit,plan)
-        if requested_credit and rec["minutes"]:
+        if requested_credit and recorded_work:
             rec["warnings"].append("Prekryv práce a plateného voľna – over, či nejde o duplicitné hodiny")
-        # No day may get more ordinary credited time than its unworked fund.
-        # This is not a determination of approved overtime.
-        credit=min(requested_credit,max(0,plan-rec["minutes"]))
+        # Never double-count work, approved home office and paid leave.
+        credit=min(requested_credit,max(0,plan-recorded_work))
+        # The 8h automatic HO entry is a full-day credit, not approved overtime.
+        saldo=(min(recorded_work,plan) if auto_home_office else recorded_work)+credit-plan
         first_in=rec["ins"][0] if rec["ins"] else None
         last_out=rec["outs"][-1] if rec["outs"] else None
         output.append({"day":day,"in":first_in,"out":last_out,
-            "worked":rec["minutes"],"breaks":rec["breaks"],"plan":plan,"credit":credit,
-            "saldo":rec["minutes"]+credit-plan,
+            "worked":recorded_work,"home_office_auto_minutes":auto_home_office,
+            "breaks":rec["breaks"],"plan":plan,"credit":credit,
+            "saldo":saldo,
             "absence":", ".join(sorted(set(categories))),"warnings":rec["warnings"]})
     return output
 
