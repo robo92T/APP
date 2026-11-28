@@ -332,6 +332,15 @@ def audits(limit:int=Query(default=100,ge=1,le=500),db:Session=Depends(db)):
 # Authentication and frontend are installed after the database and route models.
 from auth import install as install_auth
 Account, _current_account, require_role = install_auth(app, Base, Employee, engine, db, audit)
+if os.getenv("APP_ENV") == "preview" and os.getenv("ONE_TIME_ADMIN_RESET") == "true":
+    # Diagnostic only: do not log the username or password.
+    from auth import verify_password
+    with SessionLocal() as _check_session:
+        _account = _check_session.scalar(select(Account).where(
+            Account.username == os.getenv("BOOTSTRAP_ADMIN_USERNAME", "")))
+        _matches = bool(_account and verify_password(
+            os.getenv("BOOTSTRAP_ADMIN_PASSWORD", ""), _account.password_hash))
+        print("BID_PREVIEW_ADMIN_PASSWORD_VERIFIED=" + str(_matches), flush=True)
 
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, RedirectResponse
@@ -436,3 +445,7 @@ TravelOrder,TravelMeal=install_travel(app,Base,Employee,Event,Absence,Shift,engi
 # Explicitly-gated fake preview dataset. No seed on any production/PostgreSQL DB.
 from demo_seed import seed_preview
 seed_preview(Base,engine,Employee,Event,Absence,Shift,audit)
+if os.getenv("APP_ENV") == "preview" and os.getenv("DEMO_SEED") == "10":
+    with SessionLocal() as _demo_session:
+        print("BID_PREVIEW_TEST_EMPLOYEES=" +
+              str(_demo_session.query(Employee).count()), flush=True)
