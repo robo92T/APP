@@ -26,6 +26,7 @@ SOURCES = {
         "url": "https://www.slov-lex.sk/ezbierky/pravne-predpisy/SK/ZZ/2001/311/",
         "authority": "Slov-Lex", "topic": "Pracovný čas, dovolenka, prekážky a mzda"
     },
+    "nip_cestovne_novinky": {"title":"NIP – pracovné cesty: nové oznámenia a sadzby","url":"https://www.ip.gov.sk/pracovnopravne-vztahy/pracovne-cesty/","authority":"Národný inšpektorát práce","topic":"Nové sadzby stravného, kilometrovného a prehľad oznámení"},
     "sviatky": {
         "title": "Sviatky a dni pracovného pokoja – 241/1993 Z. z.",
         "url": "https://www.slov-lex.sk/ezbierky/pravne-predpisy/SK/ZZ/1993/241/",
@@ -72,6 +73,11 @@ RULES={
     "doctor_paid_days": {"label":"Lekár – referenčný počet platených dní za rok","min":0,"max":30,"default":7},
     "escort_paid_days": {"label":"Sprevádzanie – základný referenčný počet dní","min":0,"max":30,"default":7},
     "escort_extra_days_max": {"label":"Sprevádzanie – maximálny osobitný dodatočný nárok","min":0,"max":30,"default":7},
+    "domestic_5_12_cents": {"label":"Tuzemské stravné 5–12 h (CENTY)","min":0,"max":100000,"default":980},
+    "domestic_12_18_cents": {"label":"Tuzemské stravné 12–18 h (CENTY)","min":0,"max":100000,"default":1460},
+    "domestic_over18_cents": {"label":"Tuzemské stravné nad 18 h (CENTY)","min":0,"max":100000,"default":2170},
+    "private_car_milleuro_km": {"label":"Náhrada za osobné auto (TISÍCINY € na km)","min":0,"max":100000,"default":313},
+
 }
 _lock=threading.Lock()
 
