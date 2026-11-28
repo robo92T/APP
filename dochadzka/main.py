@@ -458,6 +458,8 @@ from demo_seed import seed_preview
 seed_preview(Base,engine,Employee,Event,Absence,Shift,audit)
 if os.getenv("APP_ENV") == "preview" and os.getenv("DEMO_SEED") == "10":
     with SessionLocal() as _demo_session:
+        print("BID_PREVIEW_DB_ENGINE=" + engine.dialect.name, flush=True)
+        print("BID_PREVIEW_DB_PERSISTENT=" + str(DATABASE_IS_PERSISTENT), flush=True)
         print("BID_PREVIEW_TEST_EMPLOYEES=" +
               str(_demo_session.query(Employee).count()), flush=True)
     # Optional fake employee account so the self-service calendar can be tested without admin access.
