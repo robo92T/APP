@@ -1,0 +1,56 @@
+name: BID Dochádzka - real browser E2E (isolated test data)
+on:
+  push:
+    branches:
+      - feature/sk-dochadzka
+    paths:
+      - 'dochadzka/browser_e2e/**'
+      - '.github/workflows/dochadzka-browser-e2e.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  browser-e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    defaults:
+      run:
+        working-directory: dochadzka
+    env:
+      APP_ENV: preview
+      DEMO_SEED: '10'
+      DATABASE_URL: sqlite:////tmp/bid-browser-e2e-2026.sqlite3
+      BOOTSTRAP_ADMIN_USERNAME: ci-admin
+      BOOTSTRAP_ADMIN_PASSWORD: TestOnlyPassword2026!
+      AUTH_SECRET: test-e2e-local-only-strong-secret-never-live-2026
+      DEMO_EMPLOYEE_PASSWORD: TestDemoEmployeeOnly2026!
+      ONE_TIME_ADMIN_RESET: 'false'
+      LEGAL_MONITOR_ENABLED: 'false'
+      BACKUP_SCHEDULER_ENABLED: 'false'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: dochadzka/requirements.txt
+      - name: Install backend and Chromium E2E tools
+        run: |
+          python -m pip install -r requirements.txt
+          python -m pip install 'playwright==1.56.0'
+          python -m playwright install --with-deps chromium
+      - name: Start isolated attendance backend
+        run: |
+          python -m uvicorn main:app --host 127.0.0.1 --port 8000 > /tmp/bid-browser-server.log 2>&1 &
+          echo $! > /tmp/bid-browser-server.pid
+          for i in $(seq 1 60); do
+            if curl -sf http://127.0.0.1:8000/health >/dev/null; then exit 0; fi
+            sleep 2
+          done
+          tail -n 100 /tmp/bid-browser-server.log
+          exit 1
+      - name: Real browser navigation and role round-trip
+        run: python browser_e2e/run_browser.py
+      - name: Print diagnostics on failure
+        if: failure()
+        run: tail -n 150 /tmp/bid-browser-server.log || true
