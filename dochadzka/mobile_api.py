@@ -13,7 +13,7 @@ class SelfAbsence(BaseModel):
     minutes: int | None = Field(default=None,ge=1,le=1440)
     note: str = Field(default="",max_length=400)
 
-ALLOWED={"vacation","doctor","accompany","doctor_unpaid","accompany_unpaid","unpaid","paid_leave","ocr","sick","other"}
+ALLOWED={"vacation","doctor","accompany","doctor_unpaid","accompany_unpaid","unpaid","paid_leave","ocr","sick","home_office","other"}
 def install(app,Employee,Event,Absence,db,current_account,audit):
     def mine(account=Depends(current_account),session:Session=Depends(db)):
         if account.employee_id is None:raise HTTPException(403,"Účet nie je priradený zamestnancovi")
