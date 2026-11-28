@@ -23,5 +23,10 @@ jobs:
         run: pip install -r requirements.txt pytest
       - name: Compile Python source
         run: python -m compileall -q .
+      - name: Validate JavaScript syntax for phone and desktop
+        run: |
+          node --check frontend/app.js
+          node --check frontend/mobile-ui.js
+          node --check frontend/employee-calendar.js
       - name: Run tests
         run: pytest -q
