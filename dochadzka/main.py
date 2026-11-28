@@ -394,7 +394,7 @@ from scheduling import install as install_scheduling
 Shift=install_scheduling(app,Base,Employee,Event,Absence,engine,db,admin,audit,require_role)
 
 from remote_work import install as install_remote_work
-install_remote_work(app,Employee,Event,Absence,db,_current_account,audit,is_closed_range)
+install_remote_work(app,Base,engine,Employee,Event,Absence,db,_current_account,require_role,audit,is_closed_range)
 
 from mobile_api import install as install_mobile_api
 install_mobile_api(app,Employee,Event,Absence,Shift,db,_current_account,audit,require_role)
