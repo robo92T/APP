@@ -204,3 +204,11 @@ body{background:#edf3fa}
 #mealOverview .gr-stat:first-child{border-top:3px solid #38a886}
 #mealOverview .gr-stat:nth-child(2){border-top:3px solid #407fb8}
 @media(max-width:700px){.travel-kpis{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}#travelNew .form-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* BID v10: private home-office attendance and NFC enrollment */
+.gr-gps-check{display:flex;align-items:flex-start;gap:11px;padding:12px 14px;
+border-radius:11px;border:1px solid #dfe9f3;background:#f7faff;font-size:12px;
+color:#355776;margin:14px 0}
+.gr-gps-check input{flex-shrink:0;margin-top:3px}
+#nfcUid{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;letter-spacing:.5px}
+#reviewMyMonth,#nfcScanAndroid,#nfcAssign{min-height:42px}
