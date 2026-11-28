@@ -334,17 +334,28 @@ from auth import install as install_auth
 Account, _current_account, require_role = install_auth(app, Base, Employee, engine, db, audit)
 
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, RedirectResponse
 from pathlib import Path
 STATIC_DIR = Path(__file__).parent / "frontend"
 if STATIC_DIR.is_dir():
     app.mount("/assets", StaticFiles(directory=str(STATIC_DIR)), name="assets")
+    def canonical_redirect(path: str = "/"):
+        """Move retired preview pages onto the one canonical backend and database."""
+        target = os.getenv("CANONICAL_WEB_URL", "").strip().rstrip("/")
+        if not target:
+            return None
+        if target != "https://sk-dochadzka-portal.onrender.com":
+            raise HTTPException(503, "Neplatná kanonická adresa dochádzky")
+        return RedirectResponse(url=target + path, status_code=307)
     @app.get("/", include_in_schema=False)
-    def home(): return FileResponse(STATIC_DIR / "index.html")
+    def home():
+        return canonical_redirect("/") or FileResponse(STATIC_DIR / "index.html")
     @app.head("/", include_in_schema=False)
-    def home_head(): return FileResponse(STATIC_DIR / "index.html")
+    def home_head():
+        return canonical_redirect("/") or FileResponse(STATIC_DIR / "index.html")
     @app.get("/kiosk",include_in_schema=False)
-    def kiosk_page(): return FileResponse(STATIC_DIR / "kiosk.html")
+    def kiosk_page():
+        return canonical_redirect("/kiosk") or FileResponse(STATIC_DIR / "kiosk.html")
     from pwa_icons import icon_png
     from fastapi.responses import Response
     @app.get("/pwa-icon-{size}.png",include_in_schema=False)
