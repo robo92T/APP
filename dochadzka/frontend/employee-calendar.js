@@ -137,8 +137,47 @@ async function openRequests(year,month,selected){
  state.requests={year,month,selected,absByDay:byDay};
  const options=[["vacation","Dovolenka"],["sick","PN – oznámenie"],["ocr","OČR"],["doctor","Lekár"],["accompany","Sprevádzanie"],["doctor_unpaid","Lekár – neplatené"],["accompany_unpaid","Sprevádzanie – neplatené"],["home_office","Home office"],["unpaid","Neplatené voľno"],["other","Iné"]];
  $("#content").innerHTML=shell("requests",year,month,selected,marks)+'<section id="bid-requests-detail" class="bid-day-panel" aria-live="polite"></section><div class="bid-calendar-legend"><span><i class="bid-dot bid-dot-approved"></i> Schválené</span><span><i class="bid-dot bid-dot-pending"></i> Čakajúce</span><span><i class="bid-dot bid-dot-rejected"></i> Zamietnuté</span></div><div class="bid-request-panel" id="bid-request-create"><h3>+ Nová žiadosť</h3><form id="bid-request-form"><label>Druh<select name="kind">'+options.map(x=>'<option value="'+x[0]+'">'+x[1]+'</option>').join("")+'</select></label><div class="bid-request-dates"><label>Od<input type="date" name="start" required></label><label>Do<input type="date" name="end" required></label></div><label>Minúty (iba časť dňa)<input type="number" name="minutes" min="1" max="1440" placeholder="napr. 120"></label><label>Poznámka<input name="note" maxlength="400"></label><button type="submit" class="primary">Odoslať žiadosť</button></form></div>';
+ const rows=calendar.absences.slice().sort((a,b)=>a.start.localeCompare(b.start));
+ const requestList='<div class="bid-request-history"><h3>Žiadosti v zobrazenom mesiaci <span>'+rows.length+'</span></h3>'+
+   (rows.length?rows.map(x=>'<button type="button" class="bid-request-history-item" data-request-day="'+safe(x.start<monthKey(year,month)+'-01'?monthKey(year,month)+'-01':x.start)+'">'+
+     '<span><strong>'+safe(labels[x.kind]||x.kind)+'</strong><small>'+safe(x.start)+' – '+safe(x.end)+'</small></span>'+
+     '<em class="bid-day-tag bid-day-tag-'+safe(x.status)+'">'+safe(statusLabel[x.status]||x.status)+'</em></button>').join(""):'<p class="bid-empty">Za zobrazený mesiac zatiaľ neevidujeme žiadnu žiadosť.</p>')+'</div>';
+ $("#bid-request-create").insertAdjacentHTML("beforebegin",requestList);
+ document.querySelectorAll(".bid-request-history-item").forEach(button=>button.onclick=()=>{
+   const day=button.dataset.requestDay;
+   if(day.slice(0,7)===monthKey(year,month)){
+     const target=document.querySelector('[data-cal-day="'+day+'"]');
+     target?.click();
+   }
+   document.querySelector("#bid-requests-detail")?.scrollIntoView({behavior:"smooth",block:"nearest"});
+ });
  activateCalendar("requests",year,month,showRequestsDay);showRequestsDay();
- $("#bid-request-form").onsubmit=async e=>{e.preventDefault();const p=Object.fromEntries(new FormData(e.target));p.minutes=p.minutes?Number(p.minutes):null;if(p.end<p.start){toast("Dátum do musí byť rovnaký alebo neskorší než dátum od.",true);return}try{await api("/api/me/absences",{method:"POST",body:JSON.stringify(p)});toast("Žiadosť bola odoslaná.");await openRequests(year,month,selected)}catch(err){toast(err.message,true)}};
+ $("#bid-request-form").onsubmit=async e=>{
+   e.preventDefault();
+   const form=e.target,submit=form.querySelector('button[type="submit"]');
+   const p=Object.fromEntries(new FormData(form));p.minutes=p.minutes?Number(p.minutes):null;
+   if(p.end<p.start){toast("Dátum do musí byť rovnaký alebo neskorší než dátum od.",true);return}
+   submit.disabled=true;
+   try{
+     const created=await api("/api/me/absences",{method:"POST",body:JSON.stringify(p)});
+     const [targetYear,targetMonth]=p.start.split("-").map(Number);
+     await openRequests(targetYear,targetMonth,p.start);
+     const notice=document.createElement("div");
+     notice.className="bid-request-success";notice.setAttribute("role","status");
+     notice.innerHTML='<strong>✓ Žiadosť č. '+safe(created.id)+' bola uložená</strong><span>'+safe(labels[p.kind]||p.kind)+' · '+safe(p.start)+' – '+safe(p.end)+' · '+safe(statusLabel[created.status]||created.status)+'</span>';
+     document.querySelector(".bid-request-history")?.insertAdjacentElement("beforebegin",notice);
+     notice.scrollIntoView({behavior:"smooth",block:"nearest"});
+     toast("Žiadosť bola úspešne uložená.");
+   }catch(err){
+     toast(err.message||"Žiadosť sa nepodarilo uložiť.",true);
+     const existing=document.querySelector("#bid-request-error");
+     if(existing)existing.remove();
+     const error=document.createElement("p");error.id="bid-request-error";error.className="error";error.setAttribute("role","alert");error.textContent=err.message||"Žiadosť sa nepodarilo uložiť.";
+     if(document.body.contains(form))form.prepend(error);
+   }finally{
+     if(document.body.contains(submit))submit.disabled=false;
+   }
+ };
 }
 window.BIDEmployeeCalendar={attendance:openAttendance,requests:openRequests,admin:openAdmin};
 })();
