@@ -244,7 +244,7 @@ def approve(absence_id:int, actor=Depends(admin),db:Session=Depends(db)):
     if actor.employee_id==a.employee_id:raise HTTPException(403,"Vlastnú žiadosť nemožno schváliť")
     if is_closed_range(db,a.start,a.end):raise HTTPException(409,"Zvolené obdobie je uzavreté")
     if a.status != "pending":raise HTTPException(409,"Žiadosť už nie je v stave čaká")
-    a.status="approved";audit(db,"admin","absence.approve",str(a.id));db.commit()
+    a.status="approved";audit(db,actor.username,"absence.approve",str(a.id));db.commit()
     return {"status":a.status}
 @app.post("/api/absences/{absence_id}/reject", dependencies=[Depends(admin)])
 def reject_absence(absence_id:int,actor=Depends(admin),db:Session=Depends(db)):
@@ -254,7 +254,7 @@ def reject_absence(absence_id:int,actor=Depends(admin),db:Session=Depends(db)):
     if is_closed_range(db,a.start,a.end):raise HTTPException(409,"Zvolené obdobie je uzavreté")
     if a.status!="pending":raise HTTPException(409,"Žiadosť už nie je v stave čaká")
     a.status="rejected"
-    audit(db,"admin","absence.reject",str(a.id))
+    audit(db,actor.username,"absence.reject",str(a.id))
     db.commit()
     return {"status":a.status}
 @app.get("/api/absences", dependencies=[Depends(admin)])
