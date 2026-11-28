@@ -354,10 +354,11 @@ def install(app,Employee,Event,Absence,Shift,WageComponent,Base,db,require_role)
                 report_rows.append(out)
                 counts["total"]+=1
                 counts["warning"]+=int(warnings>0)
-        if mode=="day":
-            totals={key:sum(r[key] for r in report_rows) for key in ("planned_min","worked_min","break_min","credited_min","saldo_min")}
-        else:
-            totals={key:sum(r[key] for r in report_rows) for key in ("planned_min","worked_min","break_min","credited_min","saldo_min","vacation_min","doctor_min","accompany_min","home_office_min","business_trip_min","service_errand_min","travel_duration_min","night_min")}
+        # Provide totals for every shown payroll-time component, including
+        # PN, OČR and paid/unpaid absences; CSV and XLSX use the same schema.
+        headers=DAY_HEADERS if mode=="day" else MONTH_HEADERS
+        numeric_keys={k for k,label in headers if k.endswith("_min") or k=="attendance_days"}
+        totals={key:sum(int(r.get(key,0) or 0) for r in report_rows) for key in numeric_keys}
         return {"mode":mode,"date":target.isoformat() if mode=="day" else None,
             "year":yy,"month":mm,"columns":[{"key":k,"label":label} for k,label in (DAY_HEADERS if mode=="day" else MONTH_HEADERS)],
             "rows":report_rows,"counts":counts,"totals":totals,"as_of":now.isoformat(),
