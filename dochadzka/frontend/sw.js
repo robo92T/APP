@@ -1,5 +1,5 @@
 // App shell only: NEVER cache authentication tokens, API responses, or employee records.
-const STATIC_CACHE='skdochadzka-shell-v4';
+const STATIC_CACHE='skdochadzka-shell-v5';
 const ASSETS=['/assets/style.css','/assets/mobile.css','/assets/app.js','/assets/mobile-ui.js','/assets/employee-calendar.js','/assets/icon.svg','/manifest.webmanifest'];
 self.addEventListener('install',event=>event.waitUntil(caches.open(STATIC_CACHE).then(c=>c.addAll(ASSETS)).then(()=>self.skipWaiting())));
 self.addEventListener('activate',event=>event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==STATIC_CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
