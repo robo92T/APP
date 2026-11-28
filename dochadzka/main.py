@@ -380,6 +380,9 @@ OrgUnit,OrgMembership=install_organization(app,Base,Employee,engine,db,require_r
 from pdf_reports import install as install_pdf_reports
 install_pdf_reports(app,Employee,Event,Absence,db,require_role,_current_account)
 
+from premiums import install as install_premiums
+install_premiums(app,Employee,Event,Shift,Base,db,require_role)
+
 from payroll import install as install_payroll
 MonthClose=install_payroll(app,Base,Employee,Absence,engine,db,require_role,audit,__import__("pdf_reports").build_rows,Event,Shift)
 
