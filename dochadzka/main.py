@@ -27,6 +27,17 @@ engine = create_engine(
 SessionLocal = sessionmaker(engine, expire_on_commit=False)
 TZ = ZoneInfo("Europe/Bratislava")
 app = FastAPI(title="SK Dochádzka", version="0.1.0", description="API pre dochádzku, absencie, schvaľovanie a Raspberry Pi RFID")
+@app.middleware("http")
+async def prevent_separate_attendance_on_retired_preview(request: Request, call_next):
+    """Stale installed PWA must not write to the retired preview's local DB."""
+    if (os.getenv("CANONICAL_WEB_URL", "").strip().rstrip("/")
+            == "https://sk-dochadzka-portal.onrender.com"
+            and request.url.path.startswith("/api/")):
+        from fastapi.responses import JSONResponse
+        return JSONResponse(status_code=410, content={
+            "detail": "Táto testovacia adresa bola presunutá. Otvorte https://sk-dochadzka-portal.onrender.com/ a nainštalujte mobilnú aplikáciu odtiaľ."
+        })
+    return await call_next(request)
 class Base(DeclarativeBase): pass
 class Employee(Base):
     __tablename__ = "employee"
