@@ -76,6 +76,33 @@ def test_full_day_and_punched_classification(client,headers):
         if x["employee_id"]==other["id"])
     assert line["home_office_min"]==line["worked_min"]
 
+def test_two_nonoverlapping_payroll_reasons_same_day(client,headers):
+    employees=client.get("/api/hr/employees",headers=headers).json()
+    emp=employees[3]
+    payload={"employee_id":emp["id"],"day":"2026-12-11","mode":"time_range",
+      "kind":"doctor","starts_at":"2026-12-11T08:00:00+01:00",
+      "ends_at":"2026-12-11T09:30:00+01:00","note":"Zdravotné vyšetrenie zamestnanca"}
+    first=client.post("/api/wage-components",headers=headers,json=payload)
+    assert first.status_code==201,first.text
+    second=client.post("/api/wage-components",headers=headers,json={
+      **payload,"kind":"service_errand",
+      "starts_at":"2026-12-11T10:00:00+01:00",
+      "ends_at":"2026-12-11T11:00:00+01:00",
+      "note":"Služobné rokovanie mimo pracoviska"})
+    assert second.status_code==201,second.text
+    conflict=client.post("/api/wage-components",headers=headers,json={
+      **payload,"kind":"accompany",
+      "starts_at":"2026-12-11T09:00:00+01:00",
+      "ends_at":"2026-12-11T11:30:00+01:00",
+      "note":"Sprevádzanie rodinného príslušníka"})
+    assert conflict.status_code==409,conflict.text
+    report=client.get("/api/group-report?mode=day&day=2026-12-11",headers=headers)
+    assert report.status_code==200,report.text
+    row=next(x for x in report.json()["rows"] if x["employee_id"]==emp["id"])
+    assert row["doctor_min"]==90
+    assert row["service_errand_min"]==60
+    assert row["credited_min"]<=row["planned_min"]
+
 def test_medical_separate_column_and_access(client,headers):
     resp=client.get("/api/group-report?mode=day&day=2026-11-19",headers=headers)
     assert resp.status_code==200,resp.text
