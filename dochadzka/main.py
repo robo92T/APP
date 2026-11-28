@@ -360,7 +360,7 @@ if STATIC_DIR.is_dir():
     def service_worker(): return FileResponse(STATIC_DIR / "sw.js",media_type="application/javascript",headers={"Service-Worker-Allowed":"/","Cache-Control":"no-cache"})
 
 from scheduling import install as install_scheduling
-Shift=install_scheduling(app,Base,Employee,Event,Absence,engine,db,admin,audit)
+Shift=install_scheduling(app,Base,Employee,Event,Absence,engine,db,admin,audit,require_role)
 
 from remote_work import install as install_remote_work
 install_remote_work(app,Employee,Event,Absence,db,_current_account,audit,is_closed_range)
