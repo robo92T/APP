@@ -405,7 +405,7 @@ from aktion_workflows import install as install_aktion_workflows
 install_aktion_workflows(app,Base,Employee,Absence,engine,db,_current_account,require_role,audit,is_closed_range)
 
 from travel import install as install_travel
-TravelOrder,TravelMeal=install_travel(app,Base,Employee,Event,Absence,Shift,engine,db,require_role,audit,is_closed_range)
+TravelOrder,TravelMeal=install_travel(app,Base,Employee,Event,Absence,Shift,engine,db,require_role,audit,is_closed_range,get_approved_legal_rules)
 
 # Explicitly-gated fake preview dataset. No seed on any production/PostgreSQL DB.
 from demo_seed import seed_preview
