@@ -101,7 +101,7 @@ class AbsenceCreate(BaseModel):
     end: date
     minutes: Optional[int] = Field(default=None,ge=1,le=1440)
     note: str = Field(default="",max_length=400)
-KINDS = {"vacation","doctor","accompany","doctor_unpaid","accompany_unpaid","sick","ocr","maternity","paternity","parental","unpaid","paid_leave","business_trip","training","wedding","funeral","blood_donation","other"}
+KINDS = {"vacation","doctor","accompany","doctor_unpaid","accompany_unpaid","sick","ocr","maternity","paternity","parental","unpaid","paid_leave","business_trip","home_office","training","wedding","funeral","blood_donation","other"}
 @app.get("/health")
 def health():
     # A probe must check the backing datastore, not just the Python HTTP process.
@@ -352,6 +352,9 @@ if STATIC_DIR.is_dir():
 
 from scheduling import install as install_scheduling
 Shift=install_scheduling(app,Base,Employee,Event,Absence,engine,db,admin,audit)
+
+from remote_work import install as install_remote_work
+install_remote_work(app,Employee,Event,Absence,db,_current_account,audit,is_closed_range)
 
 from mobile_api import install as install_mobile_api
 install_mobile_api(app,Employee,Event,Absence,db,_current_account,audit)
