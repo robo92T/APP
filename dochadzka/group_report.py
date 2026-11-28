@@ -156,8 +156,12 @@ def install(app,Employee,Event,Absence,Shift,Base,db,require_role):
                 if not is_current:
                     state="history"
                 on_trip=(person.id,target) in travel_dates
+                is_ho=any(a.kind=="home_office" for a in today_absences)
                 if on_trip:
                     status="Služobná cesta";key="absent"
+                elif is_ho:
+                    status="Home office – práca" if r["worked"]>0 else "Home office – čaká na výkaz"
+                    key="present" if r["worked"]>0 else "unrecorded"
                 elif absent_labels:
                     status="Neprítomnosť"
                     key="absent"
@@ -185,7 +189,7 @@ def install(app,Employee,Event,Absence,Shift,Base,db,require_role):
                     "last_kind":latest_punch.kind if latest_punch else None,
                     "planned_min":r["plan"],"worked_min":r["worked"],
                     "break_min":r["breaks"],"credited_min":r["credit"],
-                    "saldo_min":r["saldo"],"component":"Služobná cesta" if on_trip else ", ".join(absent_labels) if absent_labels else ("Práca" if r["worked"] else "—"),
+                    "saldo_min":r["saldo"],"component":"Služobná cesta" if on_trip else "Home office" if is_ho else ", ".join(absent_labels) if absent_labels else ("Práca" if r["worked"] else "—"),
                     "warnings":warning}
                 report_rows.append(out)
                 counts[key]+=1;counts["total"]+=1
