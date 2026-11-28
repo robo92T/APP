@@ -8,6 +8,7 @@ from typing import Optional
 from fastapi import Depends, HTTPException
 from pydantic import BaseModel, Field
 from sqlalchemy import Boolean, Date, ForeignKey, Integer, String, Float, select
+from work_rules import classify_agreement
 from sqlalchemy.orm import Mapped, mapped_column, Session
 
 class ProfileInput(BaseModel):
@@ -25,7 +26,7 @@ class ProfileInput(BaseModel):
     carryover_days: float = Field(default=0,ge=0,le=100)
     annual_leave_days: float = Field(default=25,ge=0,le=100)
     shift_template_id: Optional[int] = None
-    weekly_minutes: int = Field(default=2250,ge=60,le=3600)
+    weekly_minutes: int = Field(default=2400,ge=60,le=3600)
     work_days: int = Field(default=5,ge=1,le=7)
     start_date: date
     end_date: Optional[date] = None
@@ -75,6 +76,9 @@ def install(app, Base, Employee, engine, db, require_role, audit):
       ("Poobedná 14:00–22:00", "14:00","22:00",30,5,"Poobedná pracovná zmena"),
       ("Nočná 22:00–06:00", "22:00","06:00",30,5,"Cezpolnočná zmena – osobitné vyhodnotenie"),
       ("Pevný 08:00–16:30", "08:00","16:30",30,5,"8 h čistej práce denne"),
+      ("Dispečer denná 06:00–18:00", "06:00","18:00",60,7,"11 h čistá práca, hodinová prestávka"),
+      ("Dispečer nočná 18:00–06:00", "18:00","06:00",60,7,"11 h čistá práca, hodinová prestávka"),
+      ("Dispečer polzmena 06:00–12:00", "06:00","12:00",0,7,"6 h pracovnej doby"),
     ]
     with Session(engine) as session:
         if session.scalar(select(Template.id).limit(1)) is None:
@@ -104,6 +108,9 @@ def install(app, Base, Employee, engine, db, require_role, audit):
         return render_profile(e,session.get(Profile,employee_id))
     def save_profile(data:ProfileInput,session:Session,employee=None):
         if data.end_date and data.end_date<data.start_date:raise HTTPException(422,"Ukončenie pred nástupom")
+        warning=classify_agreement(data.work_regime,data.weekly_minutes)
+        if warning and data.work_regime in ("agreement_activity","agreement_student","agreement_seasonal"):
+            raise HTTPException(422,warning)
         if data.manager_id and (not session.get(Employee,data.manager_id) or (employee and employee.id==data.manager_id)):
             raise HTTPException(422,"Neplatný nadriadený")
         if data.shift_template_id and not session.get(Template,data.shift_template_id):
