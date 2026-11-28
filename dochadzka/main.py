@@ -477,18 +477,32 @@ if os.getenv("APP_ENV") == "preview" and os.getenv("DEMO_SEED") == "10":
             _demo_account = _demo_session.scalar(select(Account).where(
                 Account.username == "demo.zamestnanec"))
             if _demo_emp and not _demo_account:
-                _demo_user = Account(
+                _demo_account = Account(
                     username="demo.zamestnanec",
                     role="employee",
                     employee_id=_demo_emp.id,
+                    active=True,
                     password_hash=make_hash(_demo_password))
-                _demo_session.add(_demo_user)
+                _demo_session.add(_demo_account)
                 _demo_session.flush()
                 from sqlalchemy import insert
                 _demo_session.execute(insert(Base.metadata.tables["password_policy"]).values(
-                    account_id=_demo_user.id, must_change=False))
+                    account_id=_demo_account.id, must_change=False))
                 audit(_demo_session, "system", "demo.employee.account.create", "fictional employee")
                 _demo_session.commit()
-            print("BID_PREVIEW_EMPLOYEE_ACCOUNT_READY=" +
-                  str(bool(_demo_emp and (_demo_account or _demo_session.scalar(
-                      select(Account).where(Account.username=="demo.zamestnanec"))))),flush=True)
+            elif _demo_emp and _demo_account and (
+                    _demo_account.role != "employee"
+                    or _demo_account.employee_id != _demo_emp.id
+                    or not _demo_account.active):
+                # Demo-only repair: preserve passwords, MFA and existing employee records.
+                _demo_account.role = "employee"
+                _demo_account.employee_id = _demo_emp.id
+                _demo_account.active = True
+                audit(_demo_session, "system", "demo.employee.account.link", "fictional employee")
+                _demo_session.commit()
+            _demo_link_ok = bool(
+                _demo_emp and _demo_account and _demo_account.active
+                and _demo_account.role == "employee"
+                and _demo_account.employee_id == _demo_emp.id)
+            print("BID_PREVIEW_EMPLOYEE_ACCOUNT_READY=" + str(_demo_link_ok),flush=True)
+            print("BID_PREVIEW_EMPLOYEE_ACCOUNT_LINK_OK=" + str(_demo_link_ok),flush=True)
