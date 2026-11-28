@@ -194,13 +194,13 @@ def build_rows(employee,events,shifts,absences,year,month):
         # artificial overtime from the fixed 8h home-office attendance display.
         home_office = approved_home_office
         auto_home_office = 0
-        if home_office and applicable and plan>0:
+        if home_office and applicable:
             if rec["minutes"] == 0:
                 auto_home_office = 480
+                if plan == 0:
+                    rec["warnings"].append("Home office je schválený na deň bez plánovanej práce – 8 h je zaznamenaných, fond musí preveriť HR")
             else:
                 rec["warnings"].append("Home office sa prekrýva so skutočným pípnutím – automatických 8 h sa nepripočíta")
-        elif home_office and applicable:
-            rec["warnings"].append("Home office je schválený na deň bez plánovanej práce – automatické hodiny treba overiť")
         recorded_work=rec["minutes"]+auto_home_office
         requested_credit=min(credit,plan)
         if requested_credit and recorded_work:
