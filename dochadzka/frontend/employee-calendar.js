@@ -156,6 +156,20 @@ async function openRequests(year,month,selected){
    }
    document.querySelector("#bid-requests-detail")?.scrollIntoView({behavior:"smooth",block:"nearest"});
  });
+ const kindSelect=$("#bid-request-form [name=kind]");
+ const minutesInput=$("#bid-request-form [name=minutes]");
+ const toggleHomeOffice=()=>{
+   const isHomeOffice=kindSelect.value==="home_office";
+   minutesInput.closest("label").hidden=isHomeOffice;
+   if(isHomeOffice)minutesInput.value="";
+   let info=$("#bid-homeoffice-request-hint");
+   if(isHomeOffice&&!info){
+     info=document.createElement("p");info.id="bid-homeoffice-request-hint";info.className="bid-homeoffice-auto";
+     info.textContent="Home office: po schválení sa za plánovaný pracovný deň automaticky započíta 8:00 h. GPS ani pípnutie nie sú potrebné.";
+     kindSelect.closest("label").after(info);
+   }else if(!isHomeOffice&&info){info.remove();}
+ };
+ kindSelect.addEventListener("change",toggleHomeOffice);toggleHomeOffice();
  activateCalendar("requests",year,month,showRequestsDay);showRequestsDay();
  $("#bid-request-form").onsubmit=async e=>{
    e.preventDefault();
