@@ -80,6 +80,34 @@ def install(app,Employee,Event,Absence,Shift,db,current_account,audit):
             "total_worked_minutes":sum(x["worked_minutes"] for x in result),
             "total_saldo_minutes":sum(x["saldo_minutes"] for x in result),
             "note":"Vlastná dochádzka podľa uzavretých pípnutí. Otvorená zmena je zatiaľ nezapočítaná."}
+    @app.get("/api/me/calendar")
+    def my_calendar(year:int=Query(ge=2020,le=2100),month:int=Query(ge=1,le=12),
+        employee=Depends(mine),session:Session=Depends(db)):
+        """Only events/requests belonging to the authenticated employee; never a supplied employee_id."""
+        tz=ZoneInfo("Europe/Bratislava")
+        begin=date(year,month,1)
+        end=date(year,month,monthrange(year,month)[1])
+        first=datetime.combine(begin-timedelta(days=1),time.min,tz).astimezone(timezone.utc)
+        stop=datetime.combine(end+timedelta(days=2),time.min,tz).astimezone(timezone.utc)
+        attendance=session.scalars(select(Event).where(
+            Event.employee_id==employee.id,Event.at>=first,Event.at<stop
+        ).order_by(Event.at,Event.id)).all()
+        own_events=[]
+        for item in attendance:
+            when=item.at.replace(tzinfo=timezone.utc) if item.at.tzinfo is None else item.at
+            local=when.astimezone(tz)
+            if begin<=local.date()<=end:
+                own_events.append({"day":local.date().isoformat(),
+                                   "time":local.strftime("%H:%M"),
+                                   "kind":item.kind,"origin":item.origin})
+        absences=session.scalars(select(Absence).where(
+            Absence.employee_id==employee.id,Absence.start<=end,Absence.end>=begin
+        ).order_by(Absence.start,Absence.id)).all()
+        return {"year":year,"month":month,"events":own_events,
+                "absences":[{"id":a.id,"kind":a.kind,"start":a.start.isoformat(),
+                             "end":a.end.isoformat(),"status":a.status,
+                             "minutes":a.minutes} for a in absences]}
+
     @app.post("/api/me/absences",status_code=201)
     def create_absence(data:SelfAbsence,account=Depends(current_account),employee=Depends(mine),session:Session=Depends(db)):
         if data.kind not in ALLOWED:raise HTTPException(422,"Neplatný druh žiadosti")
