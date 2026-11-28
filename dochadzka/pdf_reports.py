@@ -139,8 +139,17 @@ def build_rows(employee,events,shifts,absences,year,month):
             # Do not deduct twice if the employee used explicit break punches.
             gross_minutes=max(0,int((at-session_start).total_seconds()//60))
             explicit=sum(max(0,int((hi-lo).total_seconds()//60)) for lo,hi in pauses)
-            automatic=expected_break(getattr(employee,"work_regime","fixed"),
-                                     session_start,at,explicit_break=explicit)
+            arrival_day=session_start.astimezone(TZ).date()
+            relevant_shift=shifts.get(arrival_day)
+            dispatcher_like=False
+            if relevant_shift is not None and not isinstance(relevant_shift,(int,float)):
+                sh_start=relevant_shift.get("start_time") if isinstance(relevant_shift,dict) else getattr(relevant_shift,"start_time","")
+                sh_end=relevant_shift.get("end_time") if isinstance(relevant_shift,dict) else getattr(relevant_shift,"end_time","")
+                sh_plan=relevant_shift.get("planned_minutes") if isinstance(relevant_shift,dict) else getattr(relevant_shift,"planned_minutes",0)
+                if (sh_start,sh_end,sh_plan) in (("06:00","18:00",660),("18:00","06:00",660)):
+                    dispatcher_like=True
+            regime="dispatcher" if dispatcher_like else getattr(employee,"work_regime","fixed")
+            automatic=expected_break(regime,session_start,at,explicit_break=explicit)
             if automatic:
                 total_span=max(0,int((at-session_start).total_seconds()//60))
                 midpoint=session_start+timedelta(minutes=total_span//2)
