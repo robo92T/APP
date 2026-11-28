@@ -359,6 +359,9 @@ install_remote_work(app,Employee,Event,Absence,db,_current_account,audit,is_clos
 from mobile_api import install as install_mobile_api
 install_mobile_api(app,Employee,Event,Absence,db,_current_account,audit)
 
+from nfc_assignment import install as install_nfc_assignment
+install_nfc_assignment(app,Employee,db,require_role,audit)
+
 from hr_profiles import install as install_hr_profiles
 install_hr_profiles(app,Base,Employee,engine,db,require_role,audit)
 
