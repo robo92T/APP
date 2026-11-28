@@ -49,7 +49,26 @@ def install(app,Employee,Event,Absence,Shift,db,current_account,audit,require_ro
         if opening is not None:warnings.append("neukončená smena")
         absences=session.scalars(select(Absence).where(Absence.employee_id==employee.id,Absence.start<nxt,Absence.end>=first)).all()
         requests=[{"id":a.id,"kind":a.kind,"start":a.start.isoformat(),"end":a.end.isoformat(),"status":a.status,"minutes":a.minutes} for a in absences]
-        return {"name":employee.name,"period":first.strftime("%Y-%m"),"weekly_minutes":employee.weekly_minutes,"worked_minutes":worked,"last_event":last,"warnings":warnings,"requests":requests,"note":"Odpracované minúty sú orientačné; otvorené zmeny nie sú započítané."}
+        # Use the shared server-side attendance calculation so approved HO is
+        # included on the employee dashboard even without any punch.
+        from pdf_reports import build_rows
+        calc_start=datetime.combine(first-timedelta(days=2),time.min,tz).astimezone(timezone.utc)
+        calc_stop=datetime.combine(nxt+timedelta(days=2),time.min,tz).astimezone(timezone.utc)
+        calc_events=session.scalars(select(Event).where(
+            Event.employee_id==employee.id,Event.at>=calc_start,Event.at<calc_stop
+        ).order_by(Event.at,Event.id)).all()
+        shifts={r.day:r for r in session.scalars(select(Shift).where(
+            Shift.employee_id==employee.id,
+            Shift.day>=first-timedelta(days=1),Shift.day<nxt
+        )).all()}
+        approved=[a for a in absences if a.status=="approved"]
+        daily=build_rows(employee,calc_events,shifts,approved,first.year,first.month)
+        worked=sum(row["worked"] for row in daily)
+        return {"name":employee.name,"period":first.strftime("%Y-%m"),"weekly_minutes":employee.weekly_minutes,
+                "worked_minutes":worked,"home_office_auto_minutes":sum(
+                    r.get("home_office_auto_minutes",0) for r in daily),
+                "last_event":last,"warnings":warnings,"requests":requests,
+                "note":"Schválený home office sa vykazuje automaticky 8:00 h bez GPS a pípnutia. Priebežná zmena bez odchodu sa zatiaľ nezapočíta."}
     @app.get("/api/me/attendance")
     def my_attendance(year:int=Query(ge=2020,le=2100),month:int=Query(ge=1,le=12),
         employee=Depends(mine),session:Session=Depends(db)):
@@ -74,6 +93,7 @@ def install(app,Employee,Event,Absence,Shift,db,current_account,audit,require_ro
                 "out":r["out"].astimezone(tz).strftime("%H:%M") if r["out"] else None,
                 "worked_minutes":r["worked"],"planned_minutes":r["plan"],
                 "break_minutes":r["breaks"],"credited_minutes":r["credit"],
+                "home_office_auto_minutes":r.get("home_office_auto_minutes",0),
                 "saldo_minutes":r["saldo"],"component":"home_office" if remote else r["absence"],
                 "warnings":r["warnings"]})
         return {"year":year,"month":month,"rows":result,
@@ -124,6 +144,7 @@ def install(app,Employee,Event,Absence,Shift,db,current_account,audit,require_ro
                 "worked_minutes":r["worked"],
                 "planned_minutes":r["plan"],"break_minutes":r["breaks"],
                 "credited_minutes":r["credit"],"saldo_minutes":r["saldo"],
+                "home_office_auto_minutes":r.get("home_office_auto_minutes",0),
                 "component":"home_office" if remote else r["absence"],
                 "warnings":r["warnings"]
             })
