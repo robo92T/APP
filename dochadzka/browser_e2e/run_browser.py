@@ -39,9 +39,17 @@ async def main():
         failures=[]
         for page,label in [(admin,"admin"),(employee,"employee")]:
             page.on("pageerror",lambda e,label=label: failures.append((label,str(e))))
+            page.on("response",lambda response,label=label: failures.append(
+                (label,"HTTP "+str(response.status)+" "+response.url))
+                if "/api/" in response.url and response.status>=500 else None)
         await login(admin,os.environ["BOOTSTRAP_ADMIN_USERNAME"],os.environ["BOOTSTRAP_ADMIN_PASSWORD"])
         await login(employee,"demo.zamestnanec",os.environ["DEMO_EMPLOYEE_PASSWORD"])
 
+        # Dashboard summary tiles must be actual tappable navigation buttons.
+        await admin.locator('#content button.stat-action[data-go="requests"]').click()
+        await admin.locator("#pageTitle").filter(has_text="Neprítomnosti").wait_for(timeout=10000)
+        print("ADMIN_DASHBOARD_TILE_OK",flush=True)
+        await admin_nav(admin,"dashboard")
         # Navigate all 19 administrator sections to catch broken module links.
         for view in ADMIN_VIEWS:
             await admin_nav(admin,view)
