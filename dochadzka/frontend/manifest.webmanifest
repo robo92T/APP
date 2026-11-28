@@ -1,18 +1,29 @@
 {
-  "name": "SK Dochádzka – zamestnanecký portál",
-  "short_name": "Dochádzka",
-  "description": "Mobilný dochádzkový portál zamestnancov a administrátorov.",
+  "name": "BID Dochádzka – dochádzkový portál",
+  "short_name": "BID Dochádzka",
+  "description": "Zamestnanecká a personálna dochádzka BID: výkazy, žiadosti, príchody a odchody.",
   "lang": "sk",
-  "start_url": "/",
+  "id": "/",
+  "start_url": "/?source=pwa",
   "scope": "/",
   "display": "standalone",
+  "display_override": [
+    "standalone",
+    "minimal-ui"
+  ],
   "background_color": "#112747",
   "theme_color": "#112747",
   "icons": [
     {
-      "src": "/assets/icon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
+      "src": "/pwa-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
       "purpose": "any maskable"
     }
   ]
