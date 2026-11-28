@@ -169,3 +169,74 @@
  #content .bid-activity>span{min-width:43px}
  #content .bid-activity strong{font-size:13px}
 }
+
+
+/* Same day-detail experience for administrator and employee */
+#content .bid-admin-calendar{margin-top:22px;margin-bottom:25px;min-width:0}
+#content .bid-admin-intro{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:0 0 12px;color:#18385f}
+#content .bid-admin-intro strong{font-size:17px;font-weight:800}
+#content .bid-admin-intro span{font-size:12px;color:#8192a8}
+#content .bid-calendar-loading{border:1px dashed #cbd9e7;padding:25px;border-radius:14px;color:#6b8198;background:#f5f9fe}
+#content .bid-day-panel{padding:0!important;overflow:hidden;border:1px solid #dfe9f3}
+#content .bid-daily-heading{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:20px 19px;background:linear-gradient(112deg,#183d66,#245a87);color:white}
+#content .bid-daily-heading h3{margin:5px 0 0;font-size:19px;font-weight:850;line-height:1.26;text-transform:capitalize;color:#fff}
+#content .bid-daily-eyebrow{font-size:10px;font-weight:800;letter-spacing:1.3px;color:#e8c643}
+#content .bid-daily-hours{display:grid;place-items:center;min-width:87px;min-height:44px;background:#ffffff1a;border:1px solid #ffffff3b;border-radius:10px;font-size:18px;font-weight:850;white-space:nowrap;font-variant-numeric:tabular-nums}
+#content .bid-daily-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;padding:16px 18px 4px}
+#content .bid-daily-metric{display:flex;flex-direction:column;justify-content:center;gap:6px;padding:13px;border:1px solid #e6edf5;border-radius:12px;background:#f7faff;min-width:0}
+#content .bid-daily-metric small{color:#647b92;font-size:11px;font-weight:700}
+#content .bid-daily-metric strong{font-size:21px;color:#1b4168;font-weight:850;font-variant-numeric:tabular-nums;white-space:nowrap}
+#content .bid-daily-metric strong.saldo{color:#188577}
+#content .bid-timeline-wrap{padding:18px 20px 17px;margin:12px 18px;border:1px solid #e0eaf3;border-radius:14px;background:#fff}
+#content .bid-timeline-title{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:12px;font-size:13px;font-weight:850;color:#194067}
+#content .bid-timeline-title small{font-size:11px;font-weight:600;color:#7a8ea4}
+#content .bid-timeline-track{position:relative;height:30px;border-radius:9px;background:repeating-linear-gradient(90deg,transparent 0,transparent calc(25% - 1px),#bdd0e2 calc(25% - 1px),#bdd0e2 25%),#edf2f7;overflow:hidden}
+#content .bid-timeline-segment{display:block;position:absolute;top:3px;height:24px;border-radius:5px;min-width:2px;box-shadow:0 1px 5px #1133561c}
+#content .bid-timeline-work{background:#19b5be}
+#content .bid-timeline-pause{background:#e8ba42}
+#content .bid-timeline-marker{position:absolute;top:0;height:30px;width:2px;transform:translateX(-1px);background:#173655;z-index:2;border:1px solid white;box-sizing:content-box}
+#content .bid-timeline-ticks{display:flex;justify-content:space-between;color:#8092a7;font-size:11px;font-variant-numeric:tabular-nums;margin-top:8px}
+#content .bid-timeline-legend{display:flex;align-items:center;gap:13px;flex-wrap:wrap;margin-top:12px;color:#617991;font-size:11px}
+#content .bid-timeline-legend span{display:inline-flex;align-items:center;gap:5px}
+#content .bid-timeline-legend i{display:inline-block;width:11px;height:9px;border-radius:3px}
+#content .bid-legend-work{background:#19b5be}
+#content .bid-legend-pause{background:#e8ba42}
+#content .bid-timeline-legend .bid-legend-mark{width:3px;background:#173655;border-radius:0}
+#content .bid-events-title{margin:19px 19px 8px;display:flex;justify-content:space-between;align-items:center;color:#1b4168;font-size:15px;font-weight:850}
+#content .bid-events-title span{border-radius:8px;background:#e6eef7;color:#496783;padding:3px 9px;font-size:12px}
+#content .bid-event-list{padding:0 18px 10px}
+#content .bid-event-line{display:flex;align-items:center;gap:12px;border-bottom:1px solid #edf2f6;padding:13px 0}
+#content .bid-event-line:last-child{border-bottom:0}
+#content .bid-event-symbol{width:38px;height:38px;flex:0 0 38px;border-radius:11px;background:#dff4f2;color:#218176;display:grid;place-items:center;font-size:18px;font-weight:850}
+#content .bid-event-out{background:#e9effb;color:#305b8a}
+#content .bid-event-break_start,#content .bid-event-break_end{background:#fff2cd;color:#ab790c}
+#content .bid-event-main{display:flex;flex:1;flex-direction:column;gap:3px;min-width:0}
+#content .bid-event-main strong{font-size:13px;color:#1e4263}
+#content .bid-event-main small{font-size:11px;color:#8596a7}
+#content .bid-event-line time{font-weight:850;font-size:17px;color:#1b4468;white-space:nowrap;font-variant-numeric:tabular-nums}
+#content .bid-absence-line{border-top:1px solid #e7eef6;margin:0 18px;padding:17px 0}
+#content .bid-absence-line>strong{display:block;margin-bottom:9px;color:#1b4168}
+#content .bid-absence-tags{display:flex;flex-wrap:wrap;gap:7px}
+#content .bid-day-tag{border-radius:20px;background:#f4f4f4;color:#53697f;font-size:11px;font-weight:800;padding:7px 10px}
+#content .bid-day-tag-approved{background:#e8f5e6;color:#2d753d}
+#content .bid-day-tag-pending{background:#fff4d5;color:#8e6815}
+#content .bid-day-tag-rejected{background:#ffebeb;color:#9e3f3f}
+#content .bid-calendar-warnings{background:#fff5e0;color:#956c22;margin:12px 18px;padding:10px 12px;border-radius:10px;font-size:12px}
+#content .bid-timeline-footnote{font-size:11px;color:#73869b;line-height:1.5;padding:0 19px 15px;margin:12px 0 0}
+#content .bid-event-list .bid-empty{padding:14px 0}
+@media(max-width:850px){
+ #content .bid-daily-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}
+ #content .bid-daily-metric strong{font-size:19px}
+}
+@media(max-width:440px){
+ #content .bid-admin-intro{align-items:flex-start}
+ #content .bid-daily-heading{padding:15px 13px}
+ #content .bid-daily-heading h3{font-size:15px}
+ #content .bid-daily-hours{font-size:15px;min-width:73px;padding:0 6px}
+ #content .bid-daily-metrics{gap:7px;padding:11px 11px 0}
+ #content .bid-daily-metric{padding:11px 9px}
+ #content .bid-timeline-wrap{margin:12px 10px;padding:15px 12px}
+ #content .bid-events-title{margin:16px 12px 8px}
+ #content .bid-event-list{padding:0 12px 10px}
+ #content .bid-timeline-footnote{padding:0 12px 14px}
+}
