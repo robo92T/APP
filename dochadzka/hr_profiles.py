@@ -81,8 +81,12 @@ def install(app, Base, Employee, engine, db, require_role, audit):
       ("Dispečer polzmena 06:00–12:00", "06:00","12:00",0,7,"6 h pracovnej doby"),
     ]
     with Session(engine) as session:
-        if session.scalar(select(Template.id).limit(1)) is None:
-            session.add_all([Template(name=n,start=s,end=e,break_minutes=b,work_days=d,description=desc) for n,s,e,b,d,desc in templates])
+        existing={name for name in session.scalars(select(Template.name)).all()}
+        missing=[Template(name=n,start=begin,end=end,break_minutes=minutes,
+                 work_days=days,description=desc)
+                 for n,begin,end,minutes,days,desc in templates if n not in existing]
+        if missing:
+            session.add_all(missing)
             session.commit()
     def render_profile(e, p):
         return {"id":e.id,"personal_number":p.personal_number if p else str(e.id),
