@@ -240,3 +240,18 @@
  #content .bid-event-list{padding:0 12px 10px}
  #content .bid-timeline-footnote{padding:0 12px 14px}
 }
+
+/* Transparent leave-request result and history on mobile / desktop */
+#content .bid-request-success{padding:16px 18px;margin:12px 0 15px;background:#e6f5ee;border:1px solid #9ed0b5;border-radius:13px;color:#186748;display:flex;flex-direction:column;gap:7px;line-height:1.4}
+#content .bid-request-success strong{font-size:15px}
+#content .bid-request-success span{font-size:13px}
+#content .bid-request-history{margin:12px 0 17px;border-radius:16px;border:1px solid #dfe8f3;background:#fff;overflow:hidden;padding:15px}
+#content .bid-request-history h3{display:flex;justify-content:space-between;align-items:center;margin:0 0 10px;color:#18385f;font-size:16px}
+#content .bid-request-history h3 span{color:#647a91;font-size:13px}
+#content .bid-request-history-item{font-family:inherit;appearance:none;-webkit-appearance:none;display:flex;align-items:center;justify-content:space-between;text-align:left;gap:8px;width:100%;padding:13px 10px;border:0;border-bottom:1px solid #eef2f7;background:#fff;color:#18385f;cursor:pointer;touch-action:manipulation}
+#content .bid-request-history-item:last-child{border-bottom:0}
+#content .bid-request-history-item:focus-visible{outline:2px solid #308cd6;outline-offset:-2px}
+#content .bid-request-history-item:hover{background:#f3f8ff}
+#content .bid-request-history-item span{display:flex;flex-direction:column;gap:6px;min-width:0}
+#content .bid-request-history-item small{font-size:11px;color:#6b8198}
+#content .bid-request-history-item em{font-size:11px;font-style:normal;text-align:center;flex-shrink:0}
