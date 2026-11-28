@@ -1,0 +1,27 @@
+# BID Dochádzka - návrh prepojenia existujúceho portálu na existujúci Postgres.
+# Tento súbor neobsahuje prihlasovacie údaje. Schválenie Blueprint plánu je samostatný krok.
+services:
+  - type: web
+    name: sk-dochadzka-portal
+    runtime: docker
+    plan: free
+    region: frankfurt
+    repo: https://github.com/robo92T/APP
+    branch: feature/sk-dochadzka
+    dockerContext: dochadzka
+    dockerfilePath: dochadzka/Dockerfile
+    autoDeployTrigger: commit
+    healthCheckPath: /health
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: sk-dochadzka-db
+          property: connectionString
+
+databases:
+  - name: sk-dochadzka-db
+    plan: free
+    region: frankfurt
+    databaseName: sk_dochadzka_db
+    user: sk_dochadzka_db_user
+    ipAllowList: []
