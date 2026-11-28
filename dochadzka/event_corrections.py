@@ -55,8 +55,8 @@ def install(app,Base,Employee,Event,engine,db,require_role,audit,is_closed_range
     def list_events(employee_id:int,start:date,end:date,session:Session=Depends(db)):
         if end<start or (end-start).days>62:raise HTTPException(422,"Maximálne 63 dní")
         if not session.get(Employee,employee_id):raise HTTPException(404,"Zamestnanec neexistuje")
-        begin=datetime.combine(start,datetime.min.time,timezone.utc)-timedelta(days=1)
-        finish=datetime.combine(end+timedelta(days=2),datetime.min.time,timezone.utc)
+        begin=datetime.combine(start,datetime.min.time(),timezone.utc)-timedelta(days=1)
+        finish=datetime.combine(end+timedelta(days=2),datetime.min.time(),timezone.utc)
         q=select(Event).where(Event.employee_id==employee_id,Event.at>=begin,
                               Event.at<finish).order_by(Event.at,Event.id)
         return [serial(e) for e in session.scalars(q).all()]
