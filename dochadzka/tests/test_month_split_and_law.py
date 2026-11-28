@@ -20,9 +20,11 @@ def test_split_night_between_months():
         "start_time":"18:00","end_time":"06:00"}}
     november=build_rows(person(),events,shift,[],2026,11)
     december=build_rows(person(),events,shift,[],2026,12)
-    assert november[-1]["worked"]==360
+    # Twelve-hour presence without a meal punch deducts the statutory 30 min once,
+    # divided around midnight by the synthetic break allocation.
+    assert november[-1]["worked"]==345
     assert november[-1]["plan"]==360
-    assert december[0]["worked"]==360
+    assert december[0]["worked"]==345
     assert december[0]["plan"]==360
 
 def test_break_is_not_working_time():
