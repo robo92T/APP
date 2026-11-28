@@ -158,6 +158,7 @@ def install(app,Employee,Event,Absence,Shift,WageComponent,Base,db,require_role)
                 elif absence.kind=="home_office":
                     values["home_office_min"]=worked
             selected=components_by.get(employee_id,{}).get(day,[])
+            credit_extra=0
             credit_remaining=max(0,plan-worked-raw["credit"])
             kinds=[]
             for comp in selected:
